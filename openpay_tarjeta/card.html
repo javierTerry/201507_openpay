@@ -8,13 +8,11 @@
             OpenPay.setId('mgvxcww4nbopuaimkkgw');
             OpenPay.setApiKey('pk_ba0993bd6f7740be8216397f61a26266');
             OpenPay.setSandboxMode(true);
-          //  OpenPay.setDevelopMode(true);
             //Se genera el id de dispositivo
             var deviceSessionId = OpenPay.deviceData.setup("payment-form", "deviceIdHiddenFieldName");
-            
             $('#pay-button').on('click', function(event) {
                 event.preventDefault();
-                $("#pay-button").prop( "disabled", true);
+                //$("#pay-button").prop( "disabled", true);
                 OpenPay.token.extractFormAndCreate('payment-form', sucess_callbak, error_callbak);                
             });
 
@@ -30,7 +28,7 @@
                 alert("ERROR [" + response.status + "] " + desc);
                 $("#pay-button").prop("disabled", false);
             };
-
+			
         });
     </script>
 
