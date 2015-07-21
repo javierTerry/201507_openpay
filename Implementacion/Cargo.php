@@ -1,4 +1,6 @@
 <?php
+use Slim\Slim;
+
 /**
  * CargoComercio.
  *
@@ -8,7 +10,6 @@
  * @author   Christian Hernandez <christian.hernandez@masnegocio.com>
  * @license  http://www.masnegocio.com Copyright 2015 MasNegocio
  */
-
 
 class CargoComercio  {
 	use MyTrait\MagicMethod;	

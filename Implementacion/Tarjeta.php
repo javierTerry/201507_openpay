@@ -1,6 +1,8 @@
 <?php
+use Slim\Slim;
+
 /**
- * CargoComercio.
+ * Tarjeta
  *
  * PHP Version 5.4
  *
@@ -9,11 +11,8 @@
  * @license  http://www.masnegocio.com Copyright 2015 MasNegocio
  */
 
-use Slim\Slim;
-
 class Tarjeta  {
 	use MyTrait\MagicMethod;
-	
 	
 	private $openpay 		= null;
 	private $apikeyPrivate	= 'mgvxcww4nbopuaimkkgw';
@@ -35,6 +34,7 @@ class Tarjeta  {
 	  * La funcion cargos implementa la CargoComercio, la cual
 	  * contiene la logica de openpay para poder realizar la via
 	  * API-OpenOPay.
+	  * 
 	  *
 	  * @author Christian Hernandez <christian.hernandez@masnegocio.com>
 	  * @version 1.0
@@ -46,7 +46,7 @@ class Tarjeta  {
 		$tarjetas = array();
 		$findDataRequest = array(
 		    'offset' => 0,
-		    'limit' => 5);
+		    'limit' => 25);
 		
 		$findDataRequest = array_merge($findDataRequest, $params);
 		
@@ -61,12 +61,15 @@ class Tarjeta  {
 			
 		foreach ($tarjetas as $key => $tarjeta) {
 			$tarjetaDTO = new TarjetaDTO();
-			$tarjetaDTO -> brand =  $tarjeta ->__get("brand");
-			$tarjetaDTO -> type =  $tarjeta ->__get("type");
+			$tarjetaDTO -> brand 	= $tarjeta -> __get("brand");
+			$tarjetaDTO -> type 	= $tarjeta -> __get("type");
+			$tarjetaDTO -> id 		= $tarjeta -> __get("id");
+			$tarjetaDTO -> bank_code= $tarjeta -> __get("bank_code");
+			$tarjetaDTO -> bank_name= $tarjeta -> __get("bank_name");
 			array_push($cardList,$tarjetaDTO);
 		}
 
-		$this -> app->log->info(print_r($cardList,true));
+		//$this -> app->log->info(print_r($cardList,true));
 		$this -> cardList = $cardList;
 		
 		$this -> estatus = true;
@@ -116,6 +119,36 @@ class Tarjeta  {
 	
 		}
 		
+		$this -> estatus = true;
+	}
+
+
+	/**
+	  * Borrar la tarjeta mediante su id implementando la API de OPENPAY 
+	  * 
+	  * Borra la terjeta previamente registrada, esta tarjeta queda eliminada definitivamente 
+	  * no existe opción de restaurar, lo que secedera es dar de alta una nueva o la misma tarjeta
+	  *   
+	  * 
+	  * 
+	  * @author Christian Hernandez <christian.hernandez@masnegocio.com>
+	  * @version 1.0
+	  * @copyright MásNegocio
+	  * 
+	  */
+	public function borrar($idTarjeta = "", $idCliente = null, array $params = array()){
+		$this -> card = new TarjetaDTO();
+		
+		$this -> app->log->info(print_r("Existe el idCliente $idCliente",true));
+		$this -> app->log->info(print_r("Tarjeta a borrar $idTarjeta",true));
+		if ($idCliente === NULL){
+			$card = $this -> openpay->cards->get($idTarjeta);
+			$card->delete();
+		} else {
+			$customer = $this -> openpay->customers->get($idCliente);
+			$card = $customer->cards->get($idTarjeta);
+			$card->delete();
+		}
 		$this -> estatus = true;
 	}
 }

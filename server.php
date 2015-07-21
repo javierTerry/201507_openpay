@@ -1,17 +1,23 @@
 <?php
- /**
-  * Server Api de la impleemtacion de OpenPay.
+/**
+  * Server Api
   *
-  * Esta API-REST contiene los recursos de openpay, dentro de las cuales 
-  * teneos recursos de comercio y de cliente - comercio.
-  *
+  * Esta API-REST contiene los recursos las implementaciones de openpay,
+  * dentro de las cuales tenemos recursos de comercio y de cliente - comercio.
+  *  
+  * PHP Version 5.4
+  * 
   * @author Christian Hernandez <christian.hernandez@masnegocio.com>
-  */
+  * @version 1.0
+  * @copyright MásNegocio 
+  * 
+  * 
+*/
 
 require_once(dirname(dirname(__FILE__))."/dependencies/vendor/autoload.php");
 require_once dirname(dirname(__FILE__)).'/dependencies/MyTrait/MagicMethods.php';
 require_once dirname(__FILE__).'/Core/Openpay.php';
-require_once dirname(__FILE__).'/Implementacion/CargoComercio.php';
+require_once dirname(__FILE__).'/Implementacion/Cargo.php';
 require_once dirname(__FILE__).'/Implementacion/Tarjeta.php';
 
 use Slim\Slim;
@@ -30,15 +36,43 @@ $app = new \Slim\Slim(
 		)
 	);
 */
-$app->get('/hello/:name', function ($name) {
-    echo "Hello, $name";
-});
 
-$app->post('/v1/monetizador/cargos', "cargos");
-$app->get('/v1/monetizador/tarjetas', "cards");
-$app->get('/v1/monetizador/tarjetas/clientes/:id', "cards");
-$app->post('/v1/monetizador/tarjetas', "cardAdd");
-$app->post('/v1/monetizador/tarjetas/clientes/:id', "cardAdd");
+$app->get('/v1/monetizador/test', "ping");
+$app -> get('/v1/monetizador/cargos', "cargos");
+$app -> post('/v1/monetizador/cargos', "cargos");
+$app -> get('/v1/monetizador/tarjetas', "cards");
+$app -> get('/v1/monetizador/tarjetas/clientes/:id', "cards");
+$app -> post('/v1/monetizador/tarjetas', "cardAdd");
+$app -> post('/v1/monetizador/tarjetas/clientes/:id', "cardAdd");
+$app -> delete("/v1/monetizador/tarjetas/:id", "cardDelete");
+$app -> delete("/v1/monetizador/tarjetas/:id/clientes/:idcliente", "cardDelete");
+
+  /**
+   * Recurso test 
+   *
+   * El recurso Test es una funcion que verifica que la conectividad de los servicio
+   * este disponible
+   *
+   * @author Christian Hernandez <christian.hernandez@masnegocio.com>
+   * @version 1.0
+   * @copyright MásNegocio
+   * @source
+   */
+ function ping() {
+    $app = Slim::getInstance();
+	$app->log->info("Servicio test Inicializando");
+	$response = array('status' => 'exito'
+					,'message' => 'Servicio Monetizador activo'
+				 );
+	$jsonStr=json_encode($response);
+	$app->log->info("Servicio test - Response \n->$jsonStr<-");
+	$app->response->headers->set('Content-Type', 'application/json');
+	$app->response->body($jsonStr);
+	$app->log->info("Servicio test Finalizando");
+	$app->stop();
+}
+
+
  /**
    * Funcion de cargos a nivel comercio
    *
@@ -49,11 +83,10 @@ $app->post('/v1/monetizador/tarjetas/clientes/:id', "cardAdd");
    * @author Christian Hernandez <christian.hernandez@masnegocio.com>
    * @version 1.0
    * @copyright MásNegocio
-  *  {@source}
+   *  
    *  
  */
 function cargos() {
-	
 	$app = Slim::getInstance();
 	$response = array('message' => "Error inesperado intente mas tarde"
 						,'codigo'	=> 0
@@ -172,6 +205,63 @@ function cardAdd($idCliente = null) {
 		$app->log->info("Proceso Completo ");
 	}catch (OpenpayApiTransactionError $e){
 		$app->log->info(print_r("OpenpayApiRequestError",true));
+		$response = array('message' => $e -> getDescription()
+						,'codigo'	=> $e -> getErrorCode()
+						,'status'	=> "fallo"
+						);
+	}catch (OpenpayApiRequestError $e){
+		$app->log->info(print_r("OpenpayApiRequestError",true));
+		$response = array('message' => $e -> getDescription()
+						,'codigo'	=> $e -> getErrorCode()
+						,'status'	=> "fallo"
+						);
+	} catch (Exception $e){
+		$app->log->info(print_r($e,true));
+		$msg = sprintf("%s, codigo de error  Consulte a su adminsitrador", $e -> getMessage());
+		$app->log->info($msg);
+	}
+	
+	$jsonStr=json_encode($response);
+	$app->log->info("Servicio crear tarjeta Finalizando- Response \n->$jsonStr<-");
+	$app->response->headers->set('Content-Type', 'application/json');
+	$app->response->body($jsonStr);
+	
+	$app->stop();
+}
+
+/**
+  * Funcion de cardDelete elimina una Tarjeta 
+  *
+  * La funcion cardDelete elimana una tarjeta previamente registrada 
+  * esta accion se puede realizar a nivel comercio o cliente - comercio
+  * para deciha accion lo unico que se necesita es 
+  *
+  * @author Christian Hernandez <christian.hernandez@masnegocio.com>
+  * @version 1.0
+  * @copyright MásNegocio
+  * @param $idCliente  valor del registro del cliente
+  * @param $idTarjeta Id de la tarjeta a borrar
+  * 
+  */
+function cardDelete( $idTarjeta = null, $idCliente = null) {
+	$app = Slim::getInstance();
+	$app->log->info("Servicio crear tarjeta Inicializando");
+	$response = array('message' => "Error inesperado intente mas tarde"
+						,'codigo'	=> 0
+						,'status'	=> "fallo"
+						);
+	try{
+		$app->log->info(print_r($app -> request() -> params(),true));
+		$tarjeta = new Tarjeta();
+		$tarjeta -> borrar($idTarjeta, $idCliente, $app -> request() -> params());
+		$response = array('message' => "Borrado exitoso"
+						,'codigo'	=> 0
+						,'status'	=> "exito"
+						,'body'		=> array()
+						);
+		$app->log->info("Proceso Completo ");
+	}catch (OpenpayApiTransactionError $e){
+		$app->log->info(print_r("OpenpayApiTransactionError",true));
 		$response = array('message' => $e -> getDescription()
 						,'codigo'	=> $e -> getErrorCode()
 						,'status'	=> "fallo"
