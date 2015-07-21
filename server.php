@@ -1,6 +1,5 @@
 <?php
  /**
-  * /**
   * Server Api de la impleemtacion de OpenPay.
   *
   * Esta API-REST contiene los recursos de openpay, dentro de las cuales 
@@ -38,7 +37,8 @@ $app->get('/hello/:name', function ($name) {
 $app->post('/v1/monetizador/cargos', "cargos");
 $app->get('/v1/monetizador/tarjetas', "cards");
 $app->get('/v1/monetizador/tarjetas/clientes/:id', "cards");
-
+$app->post('/v1/monetizador/tarjetas', "cardAdd");
+$app->post('/v1/monetizador/tarjetas/clientes/:id', "cardAdd");
  /**
    * Funcion de cargos a nivel comercio
    *
@@ -63,7 +63,6 @@ function cargos() {
 		
 		$cargo = new CargoComercio();
 		$app->log->info(print_r($app -> request() -> params(),true));
-		
 		$cargo -> send($app -> request() -> params());
 		$charge = $cargo -> __get("charge");
 
@@ -110,6 +109,7 @@ function cargos() {
   * @author Christian Hernandez <christian.hernandez@masnegocio.com>
   * @version 1.0
   * @copyright MásNegocio
+  * @param $idCliente  valor del cliente registro
   * 
   */
 function cards($idCliente = null) {
@@ -138,6 +138,58 @@ function cards($idCliente = null) {
 	
 	$jsonStr=json_encode($response);
 	$app->log->info("Servicio pago con tarjeta - Response \n->$jsonStr<-");
+	$app->response->headers->set('Content-Type', 'application/json');
+	$app->response->body($jsonStr);
+	
+	$app->stop();
+}
+
+/**
+  * Funcion de cardAdd agrega una Tarjeta 
+  *
+  * La funcion cardAdd implementa Tarjeta, la cual contiene la 
+  * logica de API-OpenOPay para agregar una tarjeta al comerio o el cliente
+  * 
+  *
+  * @author Christian Hernandez <christian.hernandez@masnegocio.com>
+  * @version 1.0
+  * @copyright MásNegocio
+  * @param $idCliente  valor del cliente registro
+  * 
+  */
+function cardAdd($idCliente = null) {
+	$app = Slim::getInstance();
+	$app->log->info("Servicio crear tarjeta Inicializando");
+	$response = array('message' => "Error inesperado intente mas tarde"
+						,'codigo'	=> 0
+						,'status'	=> "fallo"
+						);
+	try{
+		$app->log->info(print_r($app -> request() -> params(),true));
+		$tarjeta = new Tarjeta();
+		$tarjeta -> crear($idCliente, $app -> request() -> params());
+		$response = $tarjeta -> __get("card");
+		$app->log->info("Proceso Completo ");
+	}catch (OpenpayApiTransactionError $e){
+		$app->log->info(print_r("OpenpayApiRequestError",true));
+		$response = array('message' => $e -> getDescription()
+						,'codigo'	=> $e -> getErrorCode()
+						,'status'	=> "fallo"
+						);
+	}catch (OpenpayApiRequestError $e){
+		$app->log->info(print_r("OpenpayApiRequestError",true));
+		$response = array('message' => $e -> getDescription()
+						,'codigo'	=> $e -> getErrorCode()
+						,'status'	=> "fallo"
+						);
+	} catch (Exception $e){
+		$app->log->info(print_r($e,true));
+		$msg = sprintf("%s, codigo de error  Consulte a su adminsitrador", $e -> getMessage());
+		$app->log->info($msg);
+	}
+	
+	$jsonStr=json_encode($response);
+	$app->log->info("Servicio crear tarjeta Finalizando- Response \n->$jsonStr<-");
 	$app->response->headers->set('Content-Type', 'application/json');
 	$app->response->body($jsonStr);
 	

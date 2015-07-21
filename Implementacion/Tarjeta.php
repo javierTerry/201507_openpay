@@ -21,7 +21,7 @@ class Tarjeta  {
 	private $estatus		= false;
 	private $charge			= null;
 	private $cardList		= null;
-	
+	private $card			= null;
 	private $app			= null;		
 	
 	function __construct() {
@@ -29,6 +29,18 @@ class Tarjeta  {
 		$this -> app = Slim::getInstance();
 	}
 	
+	/**
+	  * Lista las tarjetas relacionadas con el comercio y comercio/cliente
+	  *
+	  * La funcion cargos implementa la CargoComercio, la cual
+	  * contiene la logica de openpay para poder realizar la via
+	  * API-OpenOPay.
+	  *
+	  * @author Christian Hernandez <christian.hernandez@masnegocio.com>
+	  * @version 1.0
+	  * @copyright MásNegocio 
+	  * 
+	  */
 	public function listar($idCliente = null, array $params = array()){
 		$cardList = array();
 		$tarjetas = array();
@@ -59,15 +71,70 @@ class Tarjeta  {
 		
 		$this -> estatus = true;
 	}
+	
+	/**
+	  * Crea una tarjeta implementando la API de OPENPAY 
+	  * 
+	  * Cuando se crea una tarjeta debe especificarse cliente, 
+	  * si no se especifica el cliente la tarjeta quedará registrada para la cuenta del comercio.
+	  *
+	  * @author Christian Hernandez <christian.hernandez@masnegocio.com>
+	  * @version 1.0
+	  * @copyright MásNegocio
+	  * 
+	  */
+	public function crear($idCliente = null, array $params = array()){
+		$this -> card = new TarjetaDTO();
+		$cardDataRequest = array(
+		    'holder_name' => '',
+		    'card_number' => '5555555555554444',
+		    'cvv2' => '123',
+		    'expiration_month' => '12',
+		    'expiration_year' => '15',
+		    'address' => array(
+		            'line1' => 'Privada Rio No. 12',
+		            'line2' => 'Co. El Tintero',
+		            'line3' => '',
+		            'postal_code' => '76920',
+		            'state' => 'Querétaro',
+		            'city' => 'Querétaro.',
+		            'country_code' => 'MX'));
+		
+		$cardDataRequest = array_merge($cardDataRequest, $params);
+		$this -> app->log->info(print_r("Existe el idCliente $idCliente",true));
+		if ($idCliente === NULL){
+			$card = $this -> openpay->cards->getList($cardDataRequest);	
+		} else {
+			$customer = $this -> openpay->customers->get($idCliente);
+			$card = $customer->cards->add($cardDataRequest);
+			$this -> card -> id			= $card -> __get("id");
+			$this -> card -> brand		= $card -> __get("brand");
+			$this -> card -> type		= $card -> __get("type");
+			$this -> card -> bank_code	= $card -> __get("bank_code");
+			$this -> card -> bank_name	= $card -> __get("bank_name");
+			
+	
+		}
+		
+		$this -> estatus = true;
+	}
 }
 
 /**
- * 
- */
+  * DTO para la Tarjeta
+  *
+  * Dicha clase genera un DTO para el intercambio de informacion
+  *
+  * @author Christian Hernandez <christian.hernandez@masnegocio.com>
+  * @version 1.0
+  * @copyright MásNegocio
+  * 
+  */
  
-class TarjetaDTO  {
+class TarjetaDTO {
 	
-	public $brand 	= "dsd";
+	public $id		= "";
+	public $brand 	= "";
 	public $type 	= "";
 	public $allows_payouts;
 	public $creation_date;
