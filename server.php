@@ -37,7 +37,7 @@ $app = new \Slim\Slim(
 	);
 */
 
-$app->get('/v1/monetizador/test', "ping");
+$app -> get('/v1/monetizador/test', "ping");
 $app -> get('/v1/monetizador/cargos', "cargos");
 $app -> post('/v1/monetizador/cargos', "cargos");
 $app -> get('/v1/monetizador/tarjetas', "cards");
@@ -94,30 +94,12 @@ function cargos() {
 						);
 	try{
 		
-		$cargo = new CargoComercio();
+		$cargo = new Cargo();
 		$app->log->info(print_r($app -> request() -> params(),true));
-		$cargo -> send($app -> request() -> params());
-		$charge = $cargo -> __get("charge");
-
-		$authorization 	= $charge ->__get("authorization");
-		$creation_date 	= $charge ->__get("creation_date");
-		$currency		= $charge ->__get("currency");
-		$customer_id	= $charge ->__get("customer_id");
-		$operation_type	= $charge ->__get("operation_type");
-		$status			= $charge ->__get("status");
-		$transaction_type=$charge ->__get("transaction_type");
+		$cargo -> crear($app -> request() -> params());
+		$response = $cargo -> __get("CargoVO");
 		
-		$response = array(
-						'autorizacion' 		=> $authorization
-						,'creation_date'	=> $creation_date
-						,'currency'			=> $currency
-						,'customer_id'		=> $customer_id
-						,'operation_type'	=> $operation_type
-						,'status'			=> $status
-						,'transaction_type'	=> $transaction_type
-						);
-		
-		$app->log->info("Autorizacion $authorization, Fecha de creacion $creation_date");
+		//$app->log->info("Autorizacion $authorization, Fecha de creacion $creation_date");
 		$app->log->info("Proceso Compelto "); 
 	} catch (Exception $e){
 		$msg = sprintf("%s, codigo de error %s  Consulte a su adminsitrador", $e -> getDescription(), $e -> getErrorCode());
