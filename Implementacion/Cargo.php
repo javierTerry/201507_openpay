@@ -20,15 +20,21 @@ use Slim\Slim;
  */
 
 class Cargo {
-	use MyTrait\MagicMethod;	
+	use MyTrait\MagicMethod;
+	use MyTrait\Response;	
 	
 	private $openpay 		= null;
 	private $apikeyPrivate	= 'mgvxcww4nbopuaimkkgw';
 	private $apikey			= 'sk_e9747dfe55b94e64805221563eb37874';
 	
+	protected $app			= null;
+	private $charge			= null;
+	private $response		= null;
+	
 	function __construct() {
 		$this -> openpay = Openpay::getInstance($this -> apikeyPrivate ,$this -> apikey );
 		$this -> app = Slim::getInstance();
+		$this -> response = $this ->__response();
 	}
 	
 	/**
@@ -62,7 +68,8 @@ class Cargo {
 	  * @author Christian Hernandez <christian.hernandez@masnegocio.com>
 	  * @version 1.0
 	  * 
-	  * @param boolean $idCliente 
+	  * @param string $customerId
+	  * @param array params
 	  * 
 	  * @throws InvalidArgumentException
 	  * 
@@ -70,26 +77,49 @@ class Cargo {
 	  * 
 	  */
 	public function crear(array $params = array(), $customerId = null){
-		
-		$chargeData = array(
+		$charge = null;
+		$cargoVO = new CargoVO();
+		try{
+			$chargeData = array(
 		    'method' => 'card',
 		    'source_id' => "",
 		    'amount' => ""
 		    ,'description' => ""
 		    ,'device_session_id' => "");
 		
-		$chargeData = array_merge($chargeData, $params);
-		$this -> app->log->info(print_r("Exite el cliente $customerId",true));
-		if ($idCliente === null) {
-			$this -> openpay -> charges -> create(chargeRequest);
-		} else {
-			$customer = $this -> openpay -> customers->get($customerId);
-			$customer->charges->create(chargeRequest);
+			$chargeData = array_merge($chargeData, $params);
+			
+			$this -> app -> log -> info(print_r("Exite el cliente $customerId",true));
+			if ($customerId === null) {
+				$charge = $this -> openpay -> charges -> create($chargeData);
+			} else {
+				$customer = $this -> openpay -> customers->get($customerId);
+				$charge = $customer->charges->create($chargeData);
+			}
+		}catch (OpenpayApiRequestError $e){
+				$app->log->info(print_r("OpenpayApiRequestError",true));
+				$this -> response = array('message' => $e -> getDescription()
+								,'codigo'	=> $e -> getErrorCode()
+							,'status'	=> "fallo"
+							);
+			throw new Exception($this -> response, 1);
+			
 		}
-		$this -> charge = $this -> openpay -> charges -> create($chargeData);
+		$cargoVO -> authorization 	= $charge ->__get("authorization");
+		$cargoVO -> creation_date 	= $charge ->__get("creation_date");
+		$cargoVO -> currency		= $charge ->__get("currency");
+		$cargoVO -> customer_id		= $charge ->__get("customer_id");
+		$cargoVO -> operation_type	= $charge ->__get("operation_type");
+		$cargoVO -> status			= $charge ->__get("status");
+		$cargoVO -> card_type		= $charge ->__get("card") -> __get("type");
+		$cargoVO -> bank_code		= $charge ->__get("card") -> __get("bank_code");
+		$cargoVO -> bank_name		= $charge ->__get("card") -> __get("bank_name");
+		$cargoVO -> brand			= $charge ->__get("card") -> __get("brand");
 		
-		$this -> app->log->info(print_r($this -> charge,true));
-		
+		$this -> response["message"]= "Cargo Realizado Exitosamente";
+		$this -> response["status"]	= "exito";
+		$this -> response["codigo"]	= "1001";
+		$this -> response["body"] = $cargoVO;
 	}
 
 
@@ -127,25 +157,14 @@ class CargoVO {
 	
 	public $authorization	= "";
 	public $creation_date 	= "";
-	public $currency 	= "";
-	public $customer_id;
-	public $operation_type;
-	public $status;
-	public $bank_code;
-	public $transaction_type;
+	public $currency 		= "";
+	public $customer_id		= "";
+	public $operation_type 	= "";
+	public $status			= "";
+	public $bank_code		= "";
+	public $card_type		= "";	
+	public $bank_name		= "";
+	public $brand			= "";
+	
 }
-
-/*
- * 
- * $authorization 	= $charge ->__get("authorization");
-		$creation_date 	= $charge ->__get("creation_date");
-		$currency		= $charge ->__get("currency");
-		$customer_id	= $charge ->__get("customer_id");
-		$operation_type	= $charge ->__get("operation_type");
-		$status			= $charge ->__get("status");
-		$transaction_type=$charge ->__get("transaction_type");
- * 
- * 
- * 
- */
 ?>

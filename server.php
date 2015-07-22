@@ -16,6 +16,7 @@
 
 require_once(dirname(dirname(__FILE__))."/dependencies/vendor/autoload.php");
 require_once dirname(dirname(__FILE__)).'/dependencies/MyTrait/MagicMethods.php';
+require_once dirname(dirname(__FILE__)).'/dependencies/MyTrait/Response.php';
 require_once dirname(__FILE__).'/Core/Openpay.php';
 require_once dirname(__FILE__).'/Implementacion/Cargo.php';
 require_once dirname(__FILE__).'/Implementacion/Tarjeta.php';
@@ -40,6 +41,7 @@ $app = new \Slim\Slim(
 $app -> get('/v1/monetizador/test', "ping");
 $app -> get('/v1/monetizador/cargos', "cargos");
 $app -> post('/v1/monetizador/cargos', "cargos");
+$app -> post('/v1/monetizador/cargos/clientes:/id', "cargos");
 $app -> get('/v1/monetizador/tarjetas', "cards");
 $app -> get('/v1/monetizador/tarjetas/clientes/:id', "cards");
 $app -> post('/v1/monetizador/tarjetas', "cardAdd");
@@ -86,24 +88,18 @@ $app -> delete("/v1/monetizador/tarjetas/:id/clientes/:idcliente", "cardDelete")
    *  
    *  
  */
-function cargos() {
+function cargos($customerId = "argmzwukbogwrs9pw3m7") {
 	$app = Slim::getInstance();
-	$response = array('message' => "Error inesperado intente mas tarde"
-						,'codigo'	=> 0
-						,'status'	=> "fallo"
-						);
 	try{
 		
 		$cargo = new Cargo();
 		$app->log->info(print_r($app -> request() -> params(),true));
-		$cargo -> crear($app -> request() -> params());
-		$response = $cargo -> __get("CargoVO");
-		
-		//$app->log->info("Autorizacion $authorization, Fecha de creacion $creation_date");
+		$cargo -> crear($app -> request() -> params(), $customerId);
+		$response = $cargo -> __get("response");
 		$app->log->info("Proceso Compelto "); 
 	} catch (Exception $e){
-		$msg = sprintf("%s, codigo de error %s  Consulte a su adminsitrador", $e -> getDescription(), $e -> getErrorCode());
-		$app->log->info($msg);
+		$response = $cargo -> __response();
+		$app->log->info(print_r($response,true));
 	}
 	
 	$jsonStr=json_encode($response);
