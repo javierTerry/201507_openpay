@@ -40,17 +40,25 @@ $app = new \Slim\Slim(
 */
 
 $app -> get('/v1/monetizador/test', "ping");
+//Cargos
 $app -> get('/v1/monetizador/cargos', "cargos");
 $app -> post('/v1/monetizador/cargos', "cargos");
 $app -> post('/v1/monetizador/cargos/clientes:/id', "cargos");
+
+//Tarjetas
 $app -> get('/v1/monetizador/tarjetas', "cards");
-$app -> get('/v1/monetizador/tarjetas/clientes/:id', "cards");
 $app -> post('/v1/monetizador/tarjetas', "cardAdd");
-$app -> post('/v1/monetizador/tarjetas/clientes/:id', "cardAdd");
 $app -> delete("/v1/monetizador/tarjetas/:id", "cardDelete");
 // Cliente
 $app -> post("/v1/monetizador/clientes", "cliente");
 $app -> get("/v1/monetizador/clientes", "clienteListar");
+$app -> get("/v1/monetizador/clientes/:id", "clienteListar");
+$app -> put("/v1/monetizador/clientes/:id", "clienteAlter");
+$app -> delete("/v1/monetizador/clientes/:id", "clienteBorrar");
+
+// Cliente - Tarjeta
+$app -> post('/v1/monetizador/tarjetas/clientes/:id', "cardAdd");
+$app -> get('/v1/monetizador/tarjetas/clientes/:id', "cards");
 $app -> delete("/v1/monetizador/clientes/:idcliente/tarjetas/:id", "cardDelete");
 
 
@@ -125,24 +133,28 @@ $app -> delete("/v1/monetizador/clientes/:idcliente/tarjetas/:id", "cardDelete")
    * Funcion de clienteListar a nivel comercio
    *
    * La funcion clienteListar se implementa a nivel Comercio, la cual
-   * obtiene una lista de usario previamente registrado, implementa 
-   * la libreria de API-OpenOPay.
+   * obtiene una lista de usuarios previamente registrado o un usuario especifico
+   * , implementa la libreria de API-OpenOPay.
    *
    * @author Christian Hernandez <christian.hernandez@masnegocio.com>
    * @version 1.0
    * @copyright MásNegocio
    *  
+   * @param $idCustomer	si el valor no existe o es blanco se obtendra 
+   * 	la lista de usuarios registrados, en caso contrario regresara 
+   *	el usuario especificado 
    *  
  */
  
- function clienteListar() {
+ function clienteListar($idCustomer = "") {
 	$app = Slim::getInstance();
 	try{
 		$app->log->info("Servicio cliente - Inicializando");
 		$cliente = new Cliente();
-		$cliente -> listar($app -> request() -> params());
+		$cliente -> listar($idCustomer, $app -> request() -> params());
 		$response = $cliente -> __get("response");
 		$app->log->info("Servicio cliente - Proceso Completo "); 
+		$app->response->setStatus(201);
 	} catch (Exception $e){
 		$app -> log -> info("Servicio cliente - Proceso Incompleto ");
 		$app -> log -> info("Servicio cliente - ". $e -> getMessage());
@@ -152,6 +164,7 @@ $app -> delete("/v1/monetizador/clientes/:idcliente/tarjetas/:id", "cardDelete")
 		}
 		
 		$app->log->info(print_r($response,true));
+		$app->response->setStatus(400);
 	}
 	
 	$jsonStr=json_encode($response);
@@ -162,6 +175,54 @@ $app -> delete("/v1/monetizador/clientes/:idcliente/tarjetas/:id", "cardDelete")
 	$app->stop();
 }
 
+/**
+   * Funcion de clienteAlter a nivel comercio
+   *
+   * La funcion clienteListar se implementa a nivel Comercio, la cual
+   * obtiene una lista de usuarios previamente registrado o un usuario especifico
+   * , implementa la libreria de API-OpenOPay.
+   *
+   * @author Christian Hernandez <christian.hernandez@masnegocio.com>
+   * @version 1.0
+   * @copyright MásNegocio
+   *  
+   * @param $idCustomer	si el valor no existe o es blanco se obtendra 
+   * 	la lista de usuarios registrados, en caso contrario regresara 
+   *	el usuario especificado 
+   *  
+ */
+ 
+ function clienteBorrar($idCustomer = "") {
+	$app = Slim::getInstance();
+	try{
+		$app->log->info("Servicio cliente -  - Inicializando");
+		$cliente = new Cliente();
+		$cliente -> listar($idCustomer, $app -> request() -> params());
+		$response = $cliente -> __get("response");
+		$app->log->info("Servicio cliente - Proceso Completo "); 
+		
+		$app->response->setStatus(204);
+	} catch (Exception $e){
+		$app -> log -> info("Servicio cliente - Proceso Incompleto ");
+		$app -> log -> info("Servicio cliente - ". $e -> getMessage());
+		$response = $cliente -> __response();
+		if ($e -> getCode() == 3000){
+			$response['message'] = $e -> getMessage();
+		}
+		
+		$app->log->info(print_r($response,true));
+		$app->response->setStatus(400);
+	}
+	
+	
+	$jsonStr=json_encode($response);
+	$app->log->info("Servicio cliente - Response \n->$jsonStr<-");
+	$app->response->headers->set('Content-Type', 'application/json');
+	$app->response->body($jsonStr);
+	
+	$app->stop();
+}
+ 
  /**
    * Funcion de cargos a nivel comercio
    *

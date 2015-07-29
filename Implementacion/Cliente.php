@@ -26,9 +26,6 @@ class Cliente  {
 	private $response		= null;
 	private $app			= null;		
 	
-	private $customer		= null;
-	private $list	= array();
-	
 	function __construct() {
 		$this -> openpay = Openpay::getInstance($this -> apikeyPrivate ,$this -> apikey );
 		$this -> app = Slim::getInstance();
@@ -55,36 +52,42 @@ class Cliente  {
 	  * @return  
 	  * 
 	  */
-	public function listar(array $params = array()){
+	public function listar($idCustomer,array $params = array()){
 		$customerList = array();
 		$customers = array();
 		try {
-			$findDataRequest = array(
+			$this -> app -> log -> info(print_r("Inicializa proceso listar",true));
+			if ($idCustomer == '' || empty($idCustomer)){
+				$findDataRequest = array(
 			    'offset' => 0,
 			    'limit' => 25);
 			
-			$findDataRequest = array_merge($findDataRequest, $params);
+				$findDataRequest = array_merge($findDataRequest, $params);
+				$customerList = $this -> openpay -> customers -> getList($findDataRequest); 
+			} else {
+				$customerList = $this -> openpay -> customers -> get($idCustomer);
+				$this -> app -> log -> info(print_r($customerList,true));
+			}
 			
-			$customerList = $this -> openpay -> customers -> getList($findDataRequest);
 			
-			//$this -> app->log->info(print_r(($customerList),true));
-		
-			foreach ($customerList as $key => $customer) {
+			foreach ($customerList as $key => $genericCustomer) {
 				$clienteDTO = new ClienteDTO();
-				$clienteDTO -> id 			= $customer -> __get("id");
-				$clienteDTO -> creation_date= $customer -> __get("creation_date");
-				//$clienteDTO -> name			= $customer -> __get("store");
-				$tmm = $customer -> __get("derivedResources");
-				$this -> app -> log -> info(print_r($tmm,true));
+				$clienteDTO -> id 			= $genericCustomer -> __get("id");
+				$clienteDTO -> creation_date= $genericCustomer -> __get("creation_date");
+				$clienteDTO -> balance		= $genericCustomer -> __get("balance");
+				
+				$tmm = $genericCustomer -> __get("serializableData");
+				foreach ($genericCustomer -> __get("serializableData") as $key => $value) {
+					$clienteDTO -> $key = $value;
+				}
 				array_push($customers,$clienteDTO);
 			}
-	
-			//$this -> app->log->info(print_r($cardList,true));
-			$this -> list = $customers;
+			$this -> response["status"] = "exito";
 			$this -> response["message"] = "Cliente listado con exito";
 			$this -> response["body"] = $customers;
 			
 			$this -> status = true;	
+			$this -> app -> log -> info(print_r("Finalizando proceso listar",true));
 		} catch (OpenpayApiTransactionError $e) {
 			$this -> app -> log -> info(print_r("OpenpayApiTransactionError",true));
 			$this -> response["message"]= $e -> getMessage();
@@ -163,9 +166,9 @@ class Cliente  {
 
 
 	/**
-	  * Borrar la tarjeta mediante su id implementando la API de OPENPAY 
+	  * Borrar el cliente mediante su id implementando la API de OPENPAY 
 	  * 
-	  * Borra la terjeta previamente registrada, esta tarjeta queda eliminada definitivamente 
+	  * Borra el cliente previamente registrado, esta tarjeta queda eliminada definitivamente 
 	  * no existe opción de restaurar, lo que secedera es dar de alta una nueva o la misma tarjeta
 	  *   
 	  * 
@@ -222,6 +225,7 @@ class ClienteDTO {
 						         ,'city' => ''
 						         ,'postal_code' => ''
 						         ,'country_code' => '');
+	public $balance 		= "";
 }
 
 ?>
