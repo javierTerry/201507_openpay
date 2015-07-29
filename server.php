@@ -53,8 +53,8 @@ $app -> delete("/v1/monetizador/tarjetas/:id", "cardDelete");
 $app -> post("/v1/monetizador/clientes", "cliente");
 $app -> get("/v1/monetizador/clientes", "clienteListar");
 $app -> get("/v1/monetizador/clientes/:id", "clienteListar");
-$app -> put("/v1/monetizador/clientes/:id", "clienteAlter");
-$app -> delete("/v1/monetizador/clientes/:id", "clienteBorrar");
+//$app -> put("/v1/monetizador/clientes/:id", "clienteAlter");
+$app -> delete("/v1/monetizador/clientes/:id", "clienteEliminar");
 
 // Cliente - Tarjeta
 $app -> post('/v1/monetizador/tarjetas/clientes/:id', "cardAdd");
@@ -176,47 +176,43 @@ $app -> delete("/v1/monetizador/clientes/:idcliente/tarjetas/:id", "cardDelete")
 }
 
 /**
-   * Funcion de clienteAlter a nivel comercio
+   * Funcion de clienteEliminar a nivel comercio
    *
-   * La funcion clienteListar se implementa a nivel Comercio, la cual
-   * obtiene una lista de usuarios previamente registrado o un usuario especifico
-   * , implementa la libreria de API-OpenOPay.
+   * La funcion clienteEliminar se implementa a nivel Comercio, la cual
+   * elimina un cliente registrado previamente, utiliza la clase Cliente.
    *
    * @author Christian Hernandez <christian.hernandez@masnegocio.com>
    * @version 1.0
    * @copyright MásNegocio
    *  
-   * @param $idCustomer	si el valor no existe o es blanco se obtendra 
-   * 	la lista de usuarios registrados, en caso contrario regresara 
-   *	el usuario especificado 
+   * @param $idCustomer	es el Id del cliente a eliminar
    *  
  */
  
- function clienteBorrar($idCustomer = "") {
+ function clienteEliminar($idCustomer = "") {
 	$app = Slim::getInstance();
 	try{
-		$app->log->info("Servicio cliente -  - Inicializando");
+		$app->log->info("Servicio cliente - Eliminar - Inicializando");
 		$cliente = new Cliente();
-		$cliente -> listar($idCustomer, $app -> request() -> params());
+		$cliente -> eliminar($idCustomer);
 		$response = $cliente -> __get("response");
-		$app->log->info("Servicio cliente - Proceso Completo "); 
-		
+		$app->log->info("Servicio cliente - Eliminar - Proceso Completo "); 
 		$app->response->setStatus(204);
 	} catch (Exception $e){
-		$app -> log -> info("Servicio cliente - Proceso Incompleto ");
-		$app -> log -> info("Servicio cliente - ". $e -> getMessage());
+		$app -> log -> info("Servicio cliente - Eliminar - Proceso Incompleto ");
+		$app -> log -> info("Servicio cliente - Eliminar - ". $e -> getMessage());
 		$response = $cliente -> __response();
 		if ($e -> getCode() == 3000){
 			$response['message'] = $e -> getMessage();
 		}
 		
 		$app->log->info(print_r($response,true));
-		$app->response->setStatus(400);
+		//$app->response->setStatus(400);
 	}
 	
 	
 	$jsonStr=json_encode($response);
-	$app->log->info("Servicio cliente - Response \n->$jsonStr<-");
+	$app->log->info("Servicio cliente - Eliminar - Response \n->$jsonStr<-");
 	$app->response->headers->set('Content-Type', 'application/json');
 	$app->response->body($jsonStr);
 	

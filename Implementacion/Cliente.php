@@ -166,33 +166,82 @@ class Cliente  {
 
 
 	/**
-	  * Borrar el cliente mediante su id implementando la API de OPENPAY 
+	  * Elimina el cliente mediante su id implementando la API de OPENPAY 
 	  * 
-	  * Borra el cliente previamente registrado, esta tarjeta queda eliminada definitivamente 
-	  * no existe opción de restaurar, lo que secedera es dar de alta una nueva o la misma tarjeta
+	  * Elimina el cliente previamente registrado, este cliente queda eliminado definitivamente 
+	  * no existe opción de restaurar, lo que secedera es dar de alta un nuevo cliente
 	  *   
-	  * 
 	  * 
 	  * @author Christian Hernandez <christian.hernandez@masnegocio.com>
 	  * @version 1.0
 	  * @copyright MásNegocio
 	  * 
+	  * @param  $idCliente Id del cliente registro con el cual se procedera a su eliminación.
 	  */
-	public function borrar($idTarjeta = "", $idCliente = null, array $params = array()){
-		$this -> card = new TarjetaDTO();
-		
-		$this -> app->log->info(print_r("Existe el idCliente $idCliente",true));
-		$this -> app->log->info(print_r("Tarjeta a borrar $idTarjeta",true));
-		if ($idCliente === NULL){
-			$card = $this -> openpay->cards->get($idTarjeta);
-			$card->delete();
-		} else {
-			$customer = $this -> openpay->customers->get($idCliente);
-			$card = $customer->cards->get($idTarjeta);
-			$card->delete();
+	public function eliminar($idCliente = ""){
+		try {
+				$this -> app -> log -> info(print_r("Inicializando proceso de eliminacion",true));
+				$this -> app->log->info(print_r("Cliente  a eliminar $idCliente",true));
+				$customer = $this -> openpay -> customers -> get($idCliente);
+				$tmp = $customer->delete();
+				$this -> app -> log -> info(print_r($tmp,true));
+				$this -> app -> log -> info(print_r("Finalizando proceso de eliminacion",true));
+		} catch (OpenpayApiTransactionError $e) {
+			$this -> app -> log -> info(print_r("OpenpayApiTransactionError idCliente = $idCliente",true));
+			$this -> response["message"]= $e -> getMessage();
+			$this -> response["codigo"]	= $e -> getErrorCode();
+		} catch (OpenpayApiRequestError $e) {
+			$this -> app -> log -> info(print_r("OpenpayApiRequestError idCliente = $idCliente",true));
+			$this -> response["message"]= $e -> getMessage();
+			$this -> response["codigo"]	= $e -> getErrorCode();
+		} catch (OpenpayApiAuthError $e) {
+			$this -> app -> log -> info(print_r("OpenpayApiAuthError idCliente = $idCliente",true));
+			$this -> app -> log -> info(print_r($e -> getMessage(),true));
+			$this -> response["message"]= "Error de interno del comercio intente mas tarde";
 		}
-		$this -> estatus = true;
+		
 	}
+
+	/**
+	  * Actualizar cliente mediante su id, implementando la API de OPENPAY 
+	  * 
+	  * Actualizar el cliente previamente registrado, este cliente se actualizara 
+	  * en base a los parametros enviados por el request. Una vez actualizado 
+	  * no hay forma de revertir los cambios. 
+	  *   
+	  * 
+	  * @author Christian Hernandez <christian.hernandez@masnegocio.com>
+	  * @version 1.0
+	  * @copyright MásNegocio
+	  * 
+	  * @param  $idCliente Id del cliente registro con el cual se procedera a su eliminación.
+	  */
+	public function eliminar($idCliente = ""){
+		try {
+				$this -> app -> log -> info(print_r("Inicializando proceso de eliminacion",true));
+				$this -> app->log->info(print_r("Cliente  a eliminar $idCliente",true));
+				$customer = $this -> openpay -> customers -> get($idCliente);
+				$tmp = $customer->delete();
+				$this -> app -> log -> info(print_r($tmp,true));
+				$this -> app -> log -> info(print_r("Finalizando proceso de eliminacion",true));
+		} catch (OpenpayApiTransactionError $e) {
+			$this -> app -> log -> info(print_r("OpenpayApiTransactionError idCliente = $idCliente",true));
+			$this -> response["message"]= $e -> getMessage();
+			$this -> response["codigo"]	= $e -> getErrorCode();
+		} catch (OpenpayApiRequestError $e) {
+			$this -> app -> log -> info(print_r("OpenpayApiRequestError idCliente = $idCliente",true));
+			$this -> response["message"]= $e -> getMessage();
+			$this -> response["codigo"]	= $e -> getErrorCode();
+		} catch (OpenpayApiAuthError $e) {
+			$this -> app -> log -> info(print_r("OpenpayApiAuthError idCliente = $idCliente",true));
+			$this -> app -> log -> info(print_r($e -> getMessage(),true));
+			$this -> response["message"]= "Error de interno del comercio intente mas tarde";
+		}
+		
+	}
+
+
+
 }
 
 /**
