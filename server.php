@@ -219,6 +219,50 @@ $app -> delete("/v1/monetizador/clientes/:idcliente/tarjetas/:id", "cardDelete")
 	$app->stop();
 }
  
+/**
+   * Funcion de clienteEliminar a nivel comercio
+   *
+   * La funcion clienteEliminar se implementa a nivel Comercio, la cual
+   * elimina un cliente registrado previamente, utiliza la clase Cliente.
+   *
+   * @author Christian Hernandez <christian.hernandez@masnegocio.com>
+   * @version 1.0
+   * @copyright MásNegocio
+   *  
+   * @param $idCustomer	es el Id del cliente a eliminar
+   *  
+ */
+ 
+ function clienteeditar($idCustomer = "") {
+	$app = Slim::getInstance();
+	try{
+		$app->log->info("Servicio cliente - Editar - Inicializando");
+		$cliente = new Cliente();
+		$cliente -> eliminar($idCustomer);
+		$response = $cliente -> __get("response");
+		$app->log->info("Servicio cliente - Eliminar - Proceso Completo "); 
+		$app->response->setStatus(204);
+	} catch (Exception $e){
+		$app -> log -> info("Servicio cliente - Eliminar - Proceso Incompleto ");
+		$app -> log -> info("Servicio cliente - Eliminar - ". $e -> getMessage());
+		$response = $cliente -> __response();
+		if ($e -> getCode() == 3000){
+			$response['message'] = $e -> getMessage();
+		}
+		
+		$app->log->info(print_r($response,true));
+		//$app->response->setStatus(400);
+	}
+	
+	
+	$jsonStr=json_encode($response);
+	$app->log->info("Servicio cliente - Eliminar - Response \n->$jsonStr<-");
+	$app->response->headers->set('Content-Type', 'application/json');
+	$app->response->body($jsonStr);
+	
+	$app->stop();
+}
+ 
  /**
    * Funcion de cargos a nivel comercio
    *
