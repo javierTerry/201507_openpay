@@ -20,6 +20,7 @@ require_once dirname(dirname(__FILE__)).'/dependencies/MyTrait/Response.php';
 require_once dirname(__FILE__).'/Core/Openpay.php';
 require_once dirname(__FILE__).'/Implementacion/Cargo.php';
 require_once dirname(__FILE__).'/Implementacion/Tarjeta.php';
+require_once dirname(__FILE__).'/Implementacion/Cliente.php';
 
 use Slim\Slim;
 
@@ -47,7 +48,11 @@ $app -> get('/v1/monetizador/tarjetas/clientes/:id', "cards");
 $app -> post('/v1/monetizador/tarjetas', "cardAdd");
 $app -> post('/v1/monetizador/tarjetas/clientes/:id', "cardAdd");
 $app -> delete("/v1/monetizador/tarjetas/:id", "cardDelete");
-$app -> delete("/v1/monetizador/tarjetas/:id/clientes/:idcliente", "cardDelete");
+// Cliente
+$app -> post("/v1/monetizador/clientes", "cliente");
+$app -> get("/v1/monetizador/clientes", "clienteListar");
+$app -> delete("/v1/monetizador/clientes/:idcliente/tarjetas/:id", "cardDelete");
+
 
   /**
    * Recurso test 
@@ -74,6 +79,88 @@ $app -> delete("/v1/monetizador/tarjetas/:id/clientes/:idcliente", "cardDelete")
 	$app->stop();
 }
 
+/**
+   * Funcion de clientes a nivel comercio
+   *
+   * La funcion cargos implementa la CargoComercio, la cual
+   * contiene la logica de openpay para poder realizar la via
+   * API-OpenOPay.
+   *
+   * @author Christian Hernandez <christian.hernandez@masnegocio.com>
+   * @version 1.0
+   * @copyright MásNegocio
+   *  
+   *  
+ */
+ 
+ function cliente() {
+	$app = Slim::getInstance();
+	try{
+		$app->log->info("Servicio cliente - Inicializando");
+		$cliente = new Cliente();
+		$app->log->info(print_r($app -> request() -> params(),true));
+		$cliente -> crear($app -> request() -> params());
+		$response = $cliente -> __get("response");
+		$app->log->info("Servicio cliente - Proceso Completo "); 
+	} catch (Exception $e){
+		$app->log->info("Servicio cliente - Proceso Incompleto ");
+		$app->log->info("Servicio cliente - ". $e -> getMessage());
+		$response = $cliente -> __response();
+		if ($e -> getCode() == 3000){
+			$response['message'] = $e -> getMessage();
+		}
+		
+		$app->log->info(print_r($response,true));
+	}
+	
+	$jsonStr=json_encode($response);
+	$app->log->info("Servicio cliente - Response \n->$jsonStr<-");
+	$app->response->headers->set('Content-Type', 'application/json');
+	$app->response->body($jsonStr);
+	
+	$app->stop();
+}
+ 
+ /**
+   * Funcion de clienteListar a nivel comercio
+   *
+   * La funcion clienteListar se implementa a nivel Comercio, la cual
+   * obtiene una lista de usario previamente registrado, implementa 
+   * la libreria de API-OpenOPay.
+   *
+   * @author Christian Hernandez <christian.hernandez@masnegocio.com>
+   * @version 1.0
+   * @copyright MásNegocio
+   *  
+   *  
+ */
+ 
+ function clienteListar() {
+	$app = Slim::getInstance();
+	try{
+		$app->log->info("Servicio cliente - Inicializando");
+		$cliente = new Cliente();
+		$cliente -> listar($app -> request() -> params());
+		$response = $cliente -> __get("response");
+		$app->log->info("Servicio cliente - Proceso Completo "); 
+	} catch (Exception $e){
+		$app -> log -> info("Servicio cliente - Proceso Incompleto ");
+		$app -> log -> info("Servicio cliente - ". $e -> getMessage());
+		$response = $cliente -> __response();
+		if ($e -> getCode() == 3000){
+			$response['message'] = $e -> getMessage();
+		}
+		
+		$app->log->info(print_r($response,true));
+	}
+	
+	$jsonStr=json_encode($response);
+	$app->log->info("Servicio cliente - Response \n->$jsonStr<-");
+	$app->response->headers->set('Content-Type', 'application/json');
+	$app->response->body($jsonStr);
+	
+	$app->stop();
+}
 
  /**
    * Funcion de cargos a nivel comercio
