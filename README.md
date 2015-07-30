@@ -4,19 +4,27 @@ Investigación para realizar pagos desde la web o dispositivo movil
 Qué es nuevo?
 =============
 
-Version 0.5 (July 12st, 2015)
+Version 0.5 (July 29st, 2015)
 ----------------------------------
  
 Version 0.5 Implementacion Cliente - Eliminar
 Se agrega los siguientes recursos
 
 * ``/v1/monetizador/clientes/:id`` 			(DELETE)
+* ``/v1/monetizador/clientes/:id`` 			(PUT)
 
+$_REQUEST = array(
+     'name' => 'customer name',
+     'last_name' => '',
+     'email' => 'customer_email@me.com',
+     'phone_number' => '44209087654',
+     'address' => {"line1": "Calle 10", "line2": "col. san pablo","line3": "entre la calle 1 y la 2","state": "Queretaro","city": "Queretaro","postal_code": "76000","country_code": "MX"} 
+   );
 
 Qué es nuevo?
 =============
 
-Version 0.4 (July 12st, 2015)
+Version 0.4 (July 18st, 2015)
 ----------------------------------
  
 Version 0.4 Implementacion Cliente - Listar
@@ -27,7 +35,7 @@ Se agrega los siguientes recursos
 
 Ejemplo de request, solo para ``/v1/monetizador/clientes``
 
-$_POST = array(
+$_REQUEST = array(
     'creation[gte]' => '2013-01-01',
     'creation[lte]' => '2013-12-31',
     'offset' => 0,
@@ -47,7 +55,7 @@ Se agrega los siguientes recursos
 
 Ejemplo de request
 
-$_POST = array(
+$_REQUEST = array(
      'external_id' => '',
      'name' => 'customer name',
      'last_name' => '',

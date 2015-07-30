@@ -53,8 +53,8 @@ $app -> delete("/v1/monetizador/tarjetas/:id", "cardDelete");
 $app -> post("/v1/monetizador/clientes", "cliente");
 $app -> get("/v1/monetizador/clientes", "clienteListar");
 $app -> get("/v1/monetizador/clientes/:id", "clienteListar");
-//$app -> put("/v1/monetizador/clientes/:id", "clienteAlter");
 $app -> delete("/v1/monetizador/clientes/:id", "clienteEliminar");
+$app -> put("/v1/monetizador/clientes/:id", "clienteEditar");
 
 // Cliente - Tarjeta
 $app -> post('/v1/monetizador/tarjetas/clientes/:id', "cardAdd");
@@ -220,31 +220,31 @@ $app -> delete("/v1/monetizador/clientes/:idcliente/tarjetas/:id", "cardDelete")
 }
  
 /**
-   * Funcion de clienteEliminar a nivel comercio
+   * Funcion de clienteEditar a nivel comercio
    *
-   * La funcion clienteEliminar se implementa a nivel Comercio, la cual
-   * elimina un cliente registrado previamente, utiliza la clase Cliente.
+   * La funcion clienteEditar se implementa a nivel Comercio, la cual
+   * actualiza un cliente registrado previamente, utiliza la clase Cliente.
    *
    * @author Christian Hernandez <christian.hernandez@masnegocio.com>
    * @version 1.0
    * @copyright MásNegocio
    *  
-   * @param $idCustomer	es el Id del cliente a eliminar
+   * @param $idCustomer	es el Id del cliente que se actualizara
    *  
  */
  
- function clienteeditar($idCustomer = "") {
+ function clienteEditar($idCustomer = "") {
 	$app = Slim::getInstance();
 	try{
 		$app->log->info("Servicio cliente - Editar - Inicializando");
 		$cliente = new Cliente();
-		$cliente -> eliminar($idCustomer);
+		$cliente -> actualizar($idCustomer, $app -> request() -> params());
 		$response = $cliente -> __get("response");
-		$app->log->info("Servicio cliente - Eliminar - Proceso Completo "); 
+		$app->log->info("Servicio cliente - Editar - Proceso Completo "); 
 		$app->response->setStatus(204);
 	} catch (Exception $e){
-		$app -> log -> info("Servicio cliente - Eliminar - Proceso Incompleto ");
-		$app -> log -> info("Servicio cliente - Eliminar - ". $e -> getMessage());
+		$app -> log -> info("Servicio cliente - Editar - Proceso Incompleto ");
+		$app -> log -> info("Servicio cliente - Editar - ". $e -> getMessage());
 		$response = $cliente -> __response();
 		if ($e -> getCode() == 3000){
 			$response['message'] = $e -> getMessage();
@@ -254,9 +254,8 @@ $app -> delete("/v1/monetizador/clientes/:idcliente/tarjetas/:id", "cardDelete")
 		//$app->response->setStatus(400);
 	}
 	
-	
 	$jsonStr=json_encode($response);
-	$app->log->info("Servicio cliente - Eliminar - Response \n->$jsonStr<-");
+	$app->log->info("Servicio cliente - Editar - Response \n->$jsonStr<-");
 	$app->response->headers->set('Content-Type', 'application/json');
 	$app->response->body($jsonStr);
 	
