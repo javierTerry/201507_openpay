@@ -27,7 +27,7 @@ use Slim\Slim;
 
 Slim::registerAutoloader();
 $app = new Slim();
-/*
+
 $app = new \Slim\Slim(
 		array(
     		'debug' => TRUE,
@@ -37,7 +37,6 @@ $app = new \Slim\Slim(
 			                                                             ))
 		)
 	);
-*/
 
 $app -> get('/v1/monetizador/test', "ping");
 //Cargos
