@@ -16,8 +16,8 @@ use Slim\Slim;
  */
 
 class Cliente  {
-	use MyTrait\MagicMethod;
-	use MyTrait\Response;
+	use MNTrait\Comun\MagicMethod;
+	use MNTrait\Comun\Response;
 	
 	private $openpay 		= null;
 	private $apikeyPrivate	= 'mgvxcww4nbopuaimkkgw';
@@ -57,6 +57,7 @@ class Cliente  {
 		$customers = array();
 		try {
 			$this -> app -> log -> info(print_r("Inicializa proceso listar",true));
+			$this -> app -> log -> info(print_r("Inicializa proceso listar - buscar cliente = $idCustomer",true));
 			if ($idCustomer == '' || empty($idCustomer)){
 				$findDataRequest = array(
 			    'offset' => 0,
@@ -65,22 +66,22 @@ class Cliente  {
 				$findDataRequest = array_merge($findDataRequest, $params);
 				$customerList = $this -> openpay -> customers -> getList($findDataRequest); 
 			} else {
-				$customerList = $this -> openpay -> customers -> get($idCustomer);
-				$this -> app -> log -> info(print_r($customerList,true));
+				$customerList[] = $this -> openpay -> customers -> get($idCustomer);
 			}
 			
-			
-			foreach ($customerList as $key => $genericCustomer) {
-				$clienteDTO = new ClienteDTO();
-				$clienteDTO -> id 			= $genericCustomer -> __get("id");
-				$clienteDTO -> creation_date= $genericCustomer -> __get("creation_date");
-				$clienteDTO -> balance		= $genericCustomer -> __get("balance");
-				
-				$tmm = $genericCustomer -> __get("serializableData");
-				foreach ($genericCustomer -> __get("serializableData") as $key => $value) {
-					$clienteDTO -> $key = $value;
+			if (count($customerList > 0)) {
+				foreach ($customerList as $key => $genericCustomer) {
+					$clienteDTO = new ClienteDTO();
+					$clienteDTO -> id 			= $genericCustomer -> __get("id");
+					$clienteDTO -> creation_date= $genericCustomer -> __get("creation_date");
+					$clienteDTO -> balance		= $genericCustomer -> __get("balance");
+					
+					$tmm = $genericCustomer -> __get("serializableData");
+					foreach ($genericCustomer -> __get("serializableData") as $key => $value) {
+						$clienteDTO -> $key = $value;
+					}
+					array_push($customers,$clienteDTO);
 				}
-				array_push($customers,$clienteDTO);
 			}
 			$this -> response["status"] = "exito";
 			$this -> response["message"] = "Cliente listado con exito";
@@ -183,8 +184,10 @@ class Cliente  {
 				$this -> app -> log -> info(print_r("Inicializando proceso de eliminacion",true));
 				$this -> app->log->info(print_r("Cliente  a eliminar $idCliente",true));
 				$customer = $this -> openpay -> customers -> get($idCliente);
-				$tmp = $customer->delete();
-				$this -> app -> log -> info(print_r($tmp,true));
+				$customer->delete();
+				$this -> response["message"] = "Cliente creado con exito";
+				$this -> response["body"] = $this -> customer;
+				$this -> status = true;
 				$this -> app -> log -> info(print_r("Finalizando proceso de eliminacion",true));
 		} catch (OpenpayApiTransactionError $e) {
 			$this -> app -> log -> info(print_r("OpenpayApiTransactionError idCliente = $idCliente",true));
@@ -214,16 +217,31 @@ class Cliente  {
 	  * @version 1.0
 	  * @copyright MásNegocio
 	  * 
-	  * @param  $idCliente Id del cliente registro con el cual se procedera a su eliminación.
+	  * @param  $idCliente Id del cliente registro con el cual se procedera a su actualización.
+	  * @param  $params Contiene los datos que se actualizaran.
 	  */
-	public function eliminar($idCliente = ""){
+	public function actualizar($idCliente = "", array $params = array()){
 		try {
-				$this -> app -> log -> info(print_r("Inicializando proceso de eliminacion",true));
-				$this -> app->log->info(print_r("Cliente  a eliminar $idCliente",true));
+				$this -> app -> log -> info(print_r("Inicializando proceso de actualización",true));
+				$this -> app->log->info(print_r("Cliente  a actualizar $idCliente",true));
+				$this -> app->log->info(print_r("Accion openpay -> customers -> get ",true));
 				$customer = $this -> openpay -> customers -> get($idCliente);
-				$tmp = $customer->delete();
-				$this -> app -> log -> info(print_r($tmp,true));
-				$this -> app -> log -> info(print_r("Finalizando proceso de eliminacion",true));
+				$this -> app->log->info(print_r("Cliente -  actualizar - procesando el request",true));
+				foreach ($params as $key => $value) {
+					if ( json_decode($value) == "" ) {
+						$customer -> $key = $value;	
+					} else {
+						$tmpObj = json_decode($value);
+						foreach ($tmpObj as $key_B => $value_B) {
+							$customer -> $key -> $key_B = $value_B;
+						}
+					}
+				}
+				$this -> app->log->info(print_r("Accion customers -> save ",true));
+				$customer->save();
+				$this -> response["message"] = "Cliente - actualizar - exito";
+				$this -> response["status"] = "exito";
+				$this -> app -> log -> info(print_r("Finalizando proceso de actualización",true));
 		} catch (OpenpayApiTransactionError $e) {
 			$this -> app -> log -> info(print_r("OpenpayApiTransactionError idCliente = $idCliente",true));
 			$this -> response["message"]= $e -> getMessage();
@@ -235,7 +253,7 @@ class Cliente  {
 		} catch (OpenpayApiAuthError $e) {
 			$this -> app -> log -> info(print_r("OpenpayApiAuthError idCliente = $idCliente",true));
 			$this -> app -> log -> info(print_r($e -> getMessage(),true));
-			$this -> response["message"]= "Error de interno del comercio intente mas tarde";
+			$this -> response["message"]= "Error de interno en la actualización intente mas tarde";
 		}
 		
 	}
@@ -256,7 +274,7 @@ class Cliente  {
   */
  
 class ClienteDTO {
-	use MyTrait\MagicMethod;
+	use MNTrait\Comun\MagicMethod;
 	
 	public $id				= "";
 	public $external_id	 	= "";
