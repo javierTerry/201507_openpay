@@ -1,9 +1,6 @@
 #------ GENERALES ------------
 .project
-
-#------ CARPETA DE DOCUMENTACION ----------
-documentation/
-
-
+log
+documentation
 #------ CARPETA DE CORE ----------
 Core
