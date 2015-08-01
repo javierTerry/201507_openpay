@@ -1,5 +1,6 @@
 #------ GENERALES ------------
 .project
-
+log
+documentation
 #------ CARPETA DE CORE ----------
 Core

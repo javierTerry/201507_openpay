@@ -12,7 +12,8 @@ use Slim\Slim;
  */
 
 class Tarjeta  {
-	use MyTrait\MagicMethod;
+	use MNTrait\Comun\MagicMethod;
+	use MNTrait\Comun\Response;
 	
 	private $openpay 		= null;
 	private $apikeyPrivate	= 'mgvxcww4nbopuaimkkgw';
@@ -165,6 +166,7 @@ class Tarjeta  {
   */
  
 class TarjetaDTO {
+	use MNTrait\Comun\MagicMethod;
 	
 	public $id		= "";
 	public $brand 	= "";

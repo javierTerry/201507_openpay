@@ -15,28 +15,23 @@
 */
 
 require_once(dirname(dirname(__FILE__))."/dependencies/vendor/autoload.php");
-require_once dirname(dirname(__FILE__)).'/dependencies/MyTrait/MagicMethods.php';
-require_once dirname(dirname(__FILE__)).'/dependencies/MyTrait/Response.php';
 require_once dirname(__FILE__).'/Core/Openpay.php';
 require_once dirname(__FILE__).'/Implementacion/Cargo.php';
 require_once dirname(__FILE__).'/Implementacion/Tarjeta.php';
 require_once dirname(__FILE__).'/Implementacion/Cliente.php';
+require_once dirname(__FILE__).'/Implementacion/Plan.php';
 
-use Slim\Slim;
-
+use Slim\Slim;	
 
 Slim::registerAutoloader();
-$app = new Slim();
-
-$app = new \Slim\Slim(
-		array(
-    		'debug' => TRUE,
-    		'log.level' => \Slim\Log::DEBUG,
-    		'log.enabled' => TRUE,
-    		'log.writer' => new \Slim\Extras\Log\DateTimeFileWriter(array("path" => "../logs/"
-			                                                             ))
-		)
-	);
+$app = new Slim(
+					array(
+			    		'debug' 			=> true,
+			    		'log.level' 		=> \Slim\Log::DEBUG,
+			    		'log.enabled' 		=> true,
+			    		'log.writer' 		=> new \Slim\LogWriter(fopen(dirname(__FILE__).'/log/'.date('Y-M-d').'.log', 'a'))
+					)
+				);
 
 $app -> get('/v1/monetizador/test', "ping");
 //Cargos
@@ -60,6 +55,13 @@ $app -> post('/v1/monetizador/tarjetas/clientes/:id', "cardAdd");
 $app -> get('/v1/monetizador/tarjetas/clientes/:id', "cards");
 $app -> delete("/v1/monetizador/clientes/:idcliente/tarjetas/:id", "cardDelete");
 
+
+// Plan
+$app -> post("/v1/monetizador/planes", "plan");
+$app -> get("/v1/monetizador/planes", "clienteListar");
+$app -> get("/v1/monetizador/planes/:id", "clienteListar");
+$app -> delete("/v1/monetizador/planes/:id", "clienteEliminar");
+$app -> put("/v1/monetizador/planes/:id", "clienteEditar");
 
   /**
    * Recurso test 
@@ -148,10 +150,10 @@ $app -> delete("/v1/monetizador/clientes/:idcliente/tarjetas/:id", "cardDelete")
  function clienteListar($idCustomer = "") {
 	$app = Slim::getInstance();
 	try{
-		$app->log->info("Servicio cliente - Inicializando");
+		$app->log->info("Servicio cliente - Inicializando", array ("test" => "caeena test"));
 		$cliente = new Cliente();
 		$cliente -> listar($idCustomer, $app -> request() -> params());
-		$response = $cliente -> __get("response");
+			$response = $cliente -> __get("response");
 		$app->log->info("Servicio cliente - Proceso Completo "); 
 		$app->response->setStatus(201);
 	} catch (Exception $e){
@@ -449,6 +451,61 @@ function cardDelete( $idTarjeta = null, $idCliente = null) {
 	
 	$app->stop();
 }
+
+
+/**
+   * Funcion de plan a nivel comercio
+   *
+   * La funcion plan usa la clase Plan que contiene la logica
+   * para crear un plan.
+   * 
+   * El plan es una platilla con la que se ligara una suscripcion 
+   * para realizar pagos recurrentes  
+   * 
+   *
+   * @author Christian Hernandez <christian.hernandez@masnegocio.com>
+   * @version 1.0 20150730 
+   * @copyright MásNegocio
+   * 
+   * @see Plan::crear() 
+   * @param	array()  app -> request() -> params() Estructura qeu contiene
+   * 		necesaria para crea un plan	
+   * 
+   * @throws Exception Se produce una excepcion general en caso de un error
+   *		no contralado  
+   *  
+ */
+ 
+ 
+ function plan() {
+
+	$app = Slim::getInstance();
+	try{
+		$app -> log -> info("Servicio Plan - Inicializando");
+		$plan = new Plan();
+		$app -> log -> info(print_r($app -> request() -> params(),true));
+		//$plan -> crear($app -> request() -> params());
+		$plan -> crear($planDataRequest);
+		$response = $plan -> __get("response");
+		$app -> log -> info("Servicio plan - Proceso Completo "); 
+	} catch (Exception $e){
+		$app -> log -> info("Servicio plan - Proceso Incompleto ");
+		$app -> log -> info("Servicio plan - ". $e -> getMessage());
+		$response = $plan -> __response();
+		if ($e -> getCode() == 3000){
+			$response['message'] = $e -> getMessage();
+		}
+		$app -> response -> setStatus(500);
+	}
+	
+	$jsonStr=json_encode($response);
+	$app -> log -> info("Servicio plan - Response \n->$jsonStr<-");
+	$app -> response -> headers -> set('Content-Type', 'application/json');
+	$app -> response -> body($jsonStr);
+	
+	$app->stop();
+}
+
 
 $app->run();
 ?>

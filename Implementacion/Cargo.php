@@ -20,8 +20,8 @@ use Slim\Slim;
  */
 
 class Cargo {
-	use MyTrait\MagicMethod;
-	use MyTrait\Response;	
+	use MNTrait\Comun\MagicMethod;
+	use MNTrait\Comun\Response;
 	
 	private $openpay 		= null;
 	private $apikeyPrivate	= 'mgvxcww4nbopuaimkkgw';
@@ -154,6 +154,7 @@ class Cargo {
   */
  
 class CargoVO {
+	use MNTrait\Comun\MagicMethod;
 	
 	public $authorization	= "";
 	public $creation_date 	= "";

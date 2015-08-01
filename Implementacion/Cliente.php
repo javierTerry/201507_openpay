@@ -16,8 +16,8 @@ use Slim\Slim;
  */
 
 class Cliente  {
-	use MyTrait\MagicMethod;
-	use MyTrait\Response;
+	use MNTrait\Comun\MagicMethod;
+	use MNTrait\Comun\Response;
 	
 	private $openpay 		= null;
 	private $apikeyPrivate	= 'mgvxcww4nbopuaimkkgw';
@@ -274,7 +274,7 @@ class Cliente  {
   */
  
 class ClienteDTO {
-	use MyTrait\MagicMethod;
+	use MNTrait\Comun\MagicMethod;
 	
 	public $id				= "";
 	public $external_id	 	= "";
