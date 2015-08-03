@@ -22,6 +22,7 @@ require_once dirname(__FILE__).'/Implementacion/Cliente.php';
 require_once dirname(__FILE__).'/Implementacion/Plan.php';
 
 use Slim\Slim;	
+use Slim\Exception;
 
 Slim::registerAutoloader();
 $app = new Slim(
@@ -57,12 +58,25 @@ $app -> delete("/v1/monetizador/clientes/:idcliente/tarjetas/:id", "cardDelete")
 
 
 // Plan
-$app -> post("/v1/monetizador/planes", "plan");
+//$app -> post("/v1/monetizador/planes", "plan");
+/*
 $app -> get("/v1/monetizador/planes", "clienteListar");
 $app -> get("/v1/monetizador/planes/:id", "clienteListar");
 $app -> delete("/v1/monetizador/planes/:id", "clienteEliminar");
 $app -> put("/v1/monetizador/planes/:id", "clienteEditar");
+*/
+$app -> group("/v1/monetizador/", function () use ($app){
+	 $app->group('planes', function () use ($app) {
+	 	
+	 	$app -> post("/", "plan");
+        $app -> get('/', "plan");
+        $app -> get('/:id', "plan");
+        $app -> put('/:id', "plan");
+        $app -> delete('/:id', "plan");
+	 });
+});
 
+$app->run();
   /**
    * Recurso test 
    *
@@ -476,36 +490,53 @@ function cardDelete( $idTarjeta = null, $idCliente = null) {
    *  
  */
  
- 
- function plan() {
 
-	$app = Slim::getInstance();
+ 
+ function plan( $isPlan = "") {
+ 	$app = Slim::getInstance();
+	$plan = new Plan();
+	$response = array();
 	try{
-		$app -> log -> info("Servicio Plan - Inicializando");
-		$plan = new Plan();
-		$app -> log -> info(print_r($app -> request() -> params(),true));
-		//$plan -> crear($app -> request() -> params());
-		$plan -> crear($planDataRequest);
+		$planDataRequest = $app -> request() -> params();
+		$app -> log -> info("Servicio Plan - Inicializando - ".$app->request->getMethod() );
+		$app -> log -> info(print_r($planDataRequest,true));
+		switch ($app->request->getMethod()) {
+		    case "POST":
+				
+				$plan -> crear($planDataRequest);		     
+		        break;
+		    case "GET":
+				$plan -> listar($isPlan, $planDataRequest);
+		        break;
+		    case "PUT":
+		        $plan -> actualizar($isPlan, $planDataRequest);
+		        break;
+			case "DELETE":
+		        $plan -> eliminar($isPlan);
+		        break;
+		    
+		    default:
+		        $app -> response -> setStatus(405);
+		};
 		$response = $plan -> __get("response");
+		
+		
 		$app -> log -> info("Servicio plan - Proceso Completo "); 
 	} catch (Exception $e){
-		$app -> log -> info("Servicio plan - Proceso Incompleto ");
-		$app -> log -> info("Servicio plan - ". $e -> getMessage());
-		$response = $plan -> __response();
+		$app->log->info("Servicio Plan - Proceso Incompleto ");
+		$app->log->info("Servicio Plan - ". $e -> getMessage());
+		$response = $plan -> get("response");
 		if ($e -> getCode() == 3000){
 			$response['message'] = $e -> getMessage();
 		}
-		$app -> response -> setStatus(500);
 	}
 	
 	$jsonStr=json_encode($response);
-	$app -> log -> info("Servicio plan - Response \n->$jsonStr<-");
-	$app -> response -> headers -> set('Content-Type', 'application/json');
-	$app -> response -> body($jsonStr);
+	$app->log->info("Servicio Plan - Response \n->$jsonStr<-");
+	$app->response->headers->set('Content-Type', 'application/json');
+	$app->response->body($jsonStr);
 	
 	$app->stop();
 }
 
-
-$app->run();
 ?>

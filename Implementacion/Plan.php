@@ -1,4 +1,5 @@
 <?php
+
 use Slim\Slim;
 
 /**
@@ -71,15 +72,14 @@ class Plan  {
 			$planDto -> id	 		= $plan -> __get("id");
 			$planDto -> creation_date=$plan -> __get("creation_date");
 			
-			$this -> response["message"] = "Plan creado con exito";
-			$this -> response["body"] = $planDto;
-			$this -> status = true;
+			$this -> response["message"]= "Plan creado con exito";
+			$this -> response["body"] 	= $planDto;
+			$this -> response["status"] = "exito";
 		} catch (OpenpayApiTransactionError $e) {
 			$this -> app -> log -> info(print_r("OpenpayApiTransactionError",true));
 			$this -> response["message"]= $e -> getMessage();
 			$this -> response["codigo"]	= $e -> getErrorCode();
 		} catch (OpenpayApiRequestError $e) {
-			$this -> app -> log -> info(print_r($e,true));
 			$this -> app -> log -> info(print_r("OpenpayApiRequestError",true));
 			$this -> response["message"]= $e -> getMessage();
 			$this -> response["codigo"]	= $e -> getErrorCode();
@@ -92,10 +92,10 @@ class Plan  {
 	}
 	
 	/**
-	  * Lista los Plans relacionados con el comercio 
+	  * Lista los Planes relacionados con el comercio 
 	  *
 	  * La funcion listar implementa la liberia de OpenPay
-	  * la cual obtiene la lista de Plans que estan registrados.
+	  * la cual obtiene la lista de Planes que estan registrados.
 	  * 
 	  *
 	  * @author Christian Hernandez <christian.hernandez@masnegocio.com>
@@ -103,6 +103,8 @@ class Plan  {
 	  * @copyright MásNegocio 
 	  * 
 	  * @param	array 	params contiene los datos requerido generar un filtro de Plans.
+	  * @param	idplan 	es el idetificador del plan , si es null, vacio o no se envia a la funcion
+	  *			regresara la lista completa de los planes limitada a 25. 	 
 	  * @throws	OpenpayApiTransactionError Si Falta un campo requerido para la alta de un Plan.
 	  * @throws OpenpayApiAuthError si falla la autenticacion, este error debe de acercarce a cero,
 	  * 			no deberia de suceder.
@@ -111,7 +113,7 @@ class Plan  {
 	  * @return  
 	  * 
 	  */
-	public function listar($idplan,array $params = array()){
+	public function listar($idplan = '', array $params = array()){
 		$planList = array();
 		$plans = array();
 		try {
@@ -133,7 +135,6 @@ class Plan  {
 					$PlanDTO = new PlanDTO();
 					$PlanDTO -> id 			= $genericplan -> __get("id");
 					$PlanDTO -> creation_date= $genericplan -> __get("creation_date");
-					$PlanDTO -> balance		= $genericplan -> __get("balance");
 					
 					$tmm = $genericplan -> __get("serializableData");
 					foreach ($genericplan -> __get("serializableData") as $key => $value) {
@@ -146,14 +147,12 @@ class Plan  {
 			$this -> response["message"] = "Plan listado con exito";
 			$this -> response["body"] = $plans;
 			
-			$this -> status = true;	
 			$this -> app -> log -> info(print_r("Finalizando proceso listar",true));
 		} catch (OpenpayApiTransactionError $e) {
 			$this -> app -> log -> info(print_r("OpenpayApiTransactionError",true));
 			$this -> response["message"]= $e -> getMessage();
 			$this -> response["codigo"]	= $e -> getErrorCode();
 		} catch (OpenpayApiRequestError $e) {
-			$this -> app -> log -> info(print_r($e,true));
 			$this -> app -> log -> info(print_r("OpenpayApiRequestError",true));
 			$this -> response["message"]= $e -> getMessage();
 			$this -> response["codigo"]	= $e -> getErrorCode();
@@ -179,14 +178,14 @@ class Plan  {
 	  */
 	public function eliminar($idPlan = ""){
 		try {
-				$this -> app -> log -> info(print_r("Inicializando proceso de eliminacion",true));
-				$this -> app->log->info(print_r("Plan  a eliminar $idPlan",true));
-				$plan = $this -> openpay -> plans -> get($idPlan);
-				$plan->delete();
-				$this -> response["message"] = "Plan creado con exito";
-				$this -> response["body"] = $plan;
-				$this -> status = true;
-				$this -> app -> log -> info(print_r("Finalizando proceso de eliminacion",true));
+			$this -> app -> log -> info(print_r("Inicializando proceso de eliminacion",true));
+			$this -> app->log->info(print_r("Plan  a eliminar $idPlan",true));
+			$plan = $this -> openpay -> plans -> get($idPlan);
+			$plan->delete();
+			$this -> response["message"] = "Plan Eliminado con exito";
+			$this -> response["body"] = $plan;
+			$this -> status = true;
+			$this -> app -> log -> info(print_r("Finalizando proceso de eliminacion",true));
 		} catch (OpenpayApiTransactionError $e) {
 			$this -> app -> log -> info(print_r("OpenpayApiTransactionError idPlan = $idPlan",true));
 			$this -> response["message"]= $e -> getMessage();
@@ -226,18 +225,11 @@ class Plan  {
 				$plan = $this -> openpay -> plans -> get($idPlan);
 				$this -> app->log->info(print_r("Plan -  actualizar - procesando el request",true));
 				foreach ($params as $key => $value) {
-					if ( json_decode($value) == "" ) {
-						$plan -> $key = $value;	
-					} else {
-						$tmpObj = json_decode($value);
-						foreach ($tmpObj as $key_B => $value_B) {
-							$plan -> $key -> $key_B = $value_B;
-						}
-					}
+					$plan -> $key = $value;	
 				}
 				$this -> app->log->info(print_r("Accion plans -> save ",true));
 				$plan->save();
-				$this -> response["message"] = "Plan - actualizar - exito";
+				$this -> response["message"] = "Plan  actualizado con exito";
 				$this -> response["status"] = "exito";
 				$this -> app -> log -> info(print_r("Finalizando proceso de actualización",true));
 		} catch (OpenpayApiTransactionError $e) {
