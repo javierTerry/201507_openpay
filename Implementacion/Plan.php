@@ -118,6 +118,7 @@ class Plan  {
 		$plans = array();
 		try {
 			$this -> app -> log -> info(print_r("Inicializa proceso listar",true));
+			
 			$this -> app -> log -> info(print_r("Inicializa proceso listar - buscar Plan = $idplan",true));
 			if ($idplan == '' || empty($idplan)){
 				$findDataRequest = array(
@@ -184,7 +185,8 @@ class Plan  {
 			$plan->delete();
 			$this -> response["message"] = "Plan Eliminado con exito";
 			$this -> response["body"] = $plan;
-			$this -> status = true;
+			$this -> response["status"] = "exito";
+			
 			$this -> app -> log -> info(print_r("Finalizando proceso de eliminacion",true));
 		} catch (OpenpayApiTransactionError $e) {
 			$this -> app -> log -> info(print_r("OpenpayApiTransactionError idPlan = $idPlan",true));

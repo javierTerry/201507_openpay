@@ -502,7 +502,6 @@ function cardDelete( $idTarjeta = null, $idCliente = null) {
 		$app -> log -> info(print_r($planDataRequest,true));
 		switch ($app->request->getMethod()) {
 		    case "POST":
-				
 				$plan -> crear($planDataRequest);		     
 		        break;
 		    case "GET":
