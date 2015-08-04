@@ -21,6 +21,8 @@ require_once dirname(__FILE__).'/Implementacion/Tarjeta.php';
 require_once dirname(__FILE__).'/Implementacion/Cliente.php';
 require_once dirname(__FILE__).'/Implementacion/Plan.php';
 
+require_once dirname(__FILE__).'/Implementacion/Suscripcion.php';
+
 use Slim\Slim;	
 use Slim\Exception;
 
@@ -57,14 +59,6 @@ $app -> get('/v1/monetizador/tarjetas/clientes/:id', "cards");
 $app -> delete("/v1/monetizador/clientes/:idcliente/tarjetas/:id", "cardDelete");
 
 
-// Plan
-//$app -> post("/v1/monetizador/planes", "plan");
-/*
-$app -> get("/v1/monetizador/planes", "clienteListar");
-$app -> get("/v1/monetizador/planes/:id", "clienteListar");
-$app -> delete("/v1/monetizador/planes/:id", "clienteEliminar");
-$app -> put("/v1/monetizador/planes/:id", "clienteEditar");
-*/
 $app -> group("/v1/monetizador/", function () use ($app){
 	 $app->group('planes', function () use ($app) {
 	 	
@@ -74,9 +68,20 @@ $app -> group("/v1/monetizador/", function () use ($app){
         $app -> put('/:id', "plan");
         $app -> delete('/:id', "plan");
 	 });
+	 
+	 $app->group('clientes', function () use ($app) {
+	 	
+	 	$app -> post("/:idCliente/suscripciones/", "suscripcion");
+        $app -> get('/:idCliente/suscripciones/', "suscripcion");
+        $app -> get('/:idCliente/suscripciones/:idSuscripcion', "suscripcion");
+        $app -> put('/:idCliente/suscripciones/:idSuscripcion', "suscripcion");
+        $app -> delete('/:idCliente/suscripciones/:idSuscripcion', "suscripcion");
+	 });
 });
 
+
 $app->run();
+
   /**
    * Recurso test 
    *
@@ -525,6 +530,80 @@ function cardDelete( $idTarjeta = null, $idCliente = null) {
 		$app->log->info("Servicio Plan - Proceso Incompleto ");
 		$app->log->info("Servicio Plan - ". $e -> getMessage());
 		$response = $plan -> get("response");
+		if ($e -> getCode() == 3000){
+			$response['message'] = $e -> getMessage();
+		}
+	}
+	
+	$jsonStr=json_encode($response);
+	$app->log->info("Servicio Plan - Response \n->$jsonStr<-");
+	$app->response->headers->set('Content-Type', 'application/json');
+	$app->response->body($jsonStr);
+	
+	$app->stop();
+}
+
+/**
+   * Funcion de suscripcion a nivel cliente
+   *
+   * La funcion suscripcion usa la clase Suscripcion que contiene la logica
+   * para realizar los metodos basicos de una suscripcion.
+   * 
+   * Las suscripciones permiten asociar un cliente y una tarjeta para que se pueden realizar cargos recurrentes.
+   * Para poder suscribir algún cliente es necesario primero crear un plan.
+   * 
+   *
+   * @author Christian Hernandez <christian.hernandez@masnegocio.com>
+   * @version 1.0 20150730 
+   * @copyright MásNegocio
+   * 
+   * @see Suscripcion 
+   * @param	array()  app -> request() -> params() Estructura que contiene los datos minimos para una suscripcion.
+   * @param	String $idSuscripcion Id unico para cada suscripcion.			
+   * 
+   * @throws Exception Se produce una excepcion general en caso de un error
+   *		no contralado  
+   *  
+ */
+ 
+
+ 
+ function suscripcion( $idCliente, $idSuscripcion = "" ) {
+ 	$app = Slim::getInstance();
+	$suscripcion = new Suscripcion();
+	$response = array();
+	try{
+		$dataRequest = $app -> request() -> params();
+		$app -> log -> info("Servicio Suscripcion - Inicializando - ".$app->request->getMethod() );
+		$app -> log -> info(print_r($dataRequest,true));
+		switch ($app->request->getMethod()) {
+		    case "POST":
+				$suscripcion -> crear($idCliente, $dataRequest);		     
+		        $app -> response -> setStatus(201);
+		        break;
+		    case "GET":
+				$suscripcion -> listar($idCliente, $idSuscripcion,$dataRequest);
+		        break;
+		    case "PUT":
+		        $suscripcion -> actualizar($idCliente, $idSuscripcion, $dataRequest);
+				$app -> response -> setStatus(201);
+		        break;
+			case "DELETE":
+		        $suscripcion -> eliminar($idCliente, $idSuscripcion);
+		        break;
+		    
+		    default:
+		        $app -> response -> setStatus(405);
+		};
+		$response = $suscripcion -> __get("response");
+		
+		
+		$app -> log -> info("Servicio suscripcion - Proceso Completo "); 
+	} catch (\Exception $e){
+		$app->log->info("Servicio suscripcion - Proceso Incompleto ");
+		$app->log->info("Servicio suscripcion - ". $e -> getMessage());
+		$app->log->debug("Servicio suscripcion - ". $e);
+		$response = $suscripcion -> __get("response");
 		if ($e -> getCode() == 3000){
 			$response['message'] = $e -> getMessage();
 		}
