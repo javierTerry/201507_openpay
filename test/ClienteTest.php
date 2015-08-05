@@ -1,16 +1,18 @@
 <?php
 require_once(dirname(dirname(dirname(__FILE__)))."/dependencies/vendor/autoload.php");
 
-class PlanTest extends PHPUnit_Framework_TestCase {
+class ClienteTest extends PHPUnit_Framework_TestCase {
 	
-	public function testMagicMethod(){
- 		$this -> assertTrue(true);
- 	}
+	private $idCliente  = "ak3hcep2n4faqqrey8t7/";
+	private $server		= "http://localhost/";
+	private $servicioBase="openpay/v1/monetizador/";
+	private $recurso	= "clientes/";
+	
  	/**
-	  * Test Listar, lista los Planes relacionados con el comercio 
+	  * Test Listar, lista los Clientees relacionados con el comercio 
 	  *
 	  * El test valida que la respuesta de la peticion rest sea una respuesta exitosa
-	  * asi como el resultado contenga una lista de planes 
+	  * asi como el resultado contenga una lista de suscrupciones 
 	  *
 	  * @author Christian Hernandez <christian.hernandez@masnegocio.com>
 	  * @version 1.0
@@ -20,13 +22,17 @@ class PlanTest extends PHPUnit_Framework_TestCase {
 	  * @param assertEquals assertEquals($response -> status , 'exito'), Verifica que la respuesta sea la palabra exito.
 	  * @param assertGreaterThan assertGreaterThan(0, count($response -> body)), Verifica qe el body contega almenos un registro.
 	  * 
-	  * @codeCoverageIgnore 
+	  * @tes
 	  * 
 	  */
- 	public function testListar(){
+ 	public function listar(){
  		
 		$client = new GuzzleHttp\Client();
-		$request = $client -> get('http://localhost/openpay/v1/monetizador/planes');
+		$servicio = sprintf("%s%s%s",$this -> server, $this -> servicioBase, $this -> recurso);
+		$request = $client -> get($servicio);
+		error_log(print_r("Resultado de listar >>>>>>>>>>>>>\n",true));
+		error_log(print_r((string) $request -> getBody(),true));
+		
 		$response = $request  -> json(array('object' => true));
  		$this -> assertTrue(is_array($request -> json()));
 		$this -> assertEquals($response -> status , 'exito');
@@ -34,10 +40,10 @@ class PlanTest extends PHPUnit_Framework_TestCase {
  	}
 	
 	/**
-	  * testListarEspecifico, lista un plan especifico relacionados con el comercio 
+	  * listarEspecifico, lista un suscrupcion especifico relacionados con el comercio 
 	  *
 	  * El test valida que la respuesta de la peticion rest sea una respuesta exitosa
-	  * asi como el resultado contenga una lista de planes 
+	  * asi como el resultado contenga una lista de suscrupciones 
 	  *
 	  * @author Christian Hernandez <christian.hernandez@masnegocio.com>
 	  * @version 1.0
@@ -47,15 +53,16 @@ class PlanTest extends PHPUnit_Framework_TestCase {
 	  * @param assertEquals assertEquals($response -> status , 'exito'), Verifica que la respuesta sea la palabra exito.
 	  * @param assertGreaterThan assertGreaterThan(0, count($response -> body)), Verifica qe el body contega almenos un registro 
 	  * 
-	  * @codeCoverageIgnore 
+	  * @tes
 	  *  
 	  */
-	public function testListarEspecifico(){
+	public function listarEspecifico(){
  		
 		$client = new GuzzleHttp\Client();
-		$idPlan = "pmpmqlv6h9vki2hfeoe0";
-		$request = $client -> get('http://localhost/openpay/v1/monetizador/planes/'.$idPlan);
-		error_log(print_r("Resultado de testListarEspecifico >>>>>>>>>>>>>\n",true));
+		$idCliente = "ak3hcep2n4faqqrey8t7";
+		$servicio = sprintf("%s%s%s%s",$this -> server, $this -> servicioBase, $this -> recurso, $idCliente);
+		$request = $client -> get($servicio);
+		error_log(print_r("Resultado de testListar >>>>>>>>>>>>>\n",true));
 		error_log(print_r((string) $request -> getBody(),true));
 		$response = $request  -> json(array('object' => true));
  		$this -> assertTrue(is_array($request -> json()));
@@ -64,11 +71,11 @@ class PlanTest extends PHPUnit_Framework_TestCase {
  	}
 	
 	/**
-	  * testCrear, Crea un plan relacionado con el comercio 
+	  * Crear, Crea un suscrupcion relacionado con el comercio 
 	  *
 	  * El test valida que la respuesta de la peticion rest sea una respuesta exitosa
-	  * asi como el resultado contenga un objeto especificando el plan creado
-	  * usando el servicio http://ip-expuesta/openpay/v1/monetizador/planes/ mediante el 
+	  * asi como el resultado contenga un objeto especificando el suscrupcion creado
+	  * usando el servicio http://ip-expuesta/openpay/v1/monetizador/suscrupciones/ mediante el 
 	  * metodo POST 
 	  * 
 	  * @author Christian Hernandez <christian.hernandez@masnegocio.com>
@@ -79,42 +86,53 @@ class PlanTest extends PHPUnit_Framework_TestCase {
 	  * @param assertEquals assertEquals($response -> status , 'exito'), Verifica que la respuesta sea la palabra exito.
 	  * @param assertGreaterThan assertGreaterThan(0, count($response -> body)), Verifica qe el body contega almenos un registro 
 	  * 
+	  * @test
 	  */
-	public function testCrear(){
+	public function crear(){
  		
-		$planDataRequest = array(
-				    'amount' => 150.00,
-				    'status_after_retry' => 'cancelled',
-				    'retry_times' => 2,
-				    'name' => 'Plan Curso Verano 15',
-				    'repeat_unit' => 'month',
-				    'trial_days' => '30',
-				    'repeat_every' => '3',
-				    'currency' => 'MXN'
-					);
+		$dataRequest = array(
+		     'external_id' => '5',
+		     'name' => 'customer name 5',
+		     'last_name' => 'Last name 5',
+		     'email' => 'customer_email5@me.com',
+		     'requires_account' => false,
+		     'phone_number' => '44209087655',
+		     'address' => array(
+		         'line1' => 'Calle 10 5',
+		         'line2' => 'col. san pablo 5',
+		         'line3' => 'entre la calle 1 y la 2 5',
+		         'state' => 'Queretaro 5',
+		         'city' => 'Queretaro 5',
+		         'postal_code' => '76005',
+		         'country_code' => 'MX'
+		      )
+		   );
 					
 		$client = new GuzzleHttp\Client();
 		
 		$options = array(
-							'body' 	=>  $planDataRequest
+							'body' 	=>  $dataRequest
 							,'config'	=> array()
 							,'headers'	=> array()	
 						 );
 			
-		$request = $client -> post('http://localhost/openpay/v1/monetizador/planes/', $options);
-							
+		$servicio = sprintf("%s%s%s",$this -> server, $this -> servicioBase, $this -> recurso);
+		$request = $client -> post($servicio,$options);
+		error_log(print_r("Resultado de crear >>>>>>>>>>>>>\n",true));
+		error_log(print_r((string) $request -> getBody(),true));					
 		$response = $request  -> json(array('object' => true));
  		$this -> assertTrue(is_array($request -> json()));
 		$this -> assertEquals($response -> status , 'exito');
 		$this -> assertGreaterThan(0, count($response -> body));
+		
  	}
 	
 	/**
-	  * testEliminar, Elimina un plan relacionado con el comercio 
+	  * testEliminar, Elimina un suscrupcion relacionado con el comercio 
 	  *
 	  * El test valida que la respuesta de la peticion rest sea una respuesta exitosa
-	  * asi como el resultado contenga un objeto especificando el plan creado
-	  * usando el servicio http://ip-expuesta/openpay/v1/monetizador/planes/:id mediante el 
+	  * asi como el resultado contenga un objeto especificando el suscrupcion creado
+	  * usando el servicio http://ip-expuesta/openpay/v1/monetizador/suscrupciones/:id mediante el 
 	  * metodo DELETE
 	  * 
 	  * @author Christian Hernandez <christian.hernandez@masnegocio.com>
@@ -124,29 +142,33 @@ class PlanTest extends PHPUnit_Framework_TestCase {
 	  * @param assertTrue assertTrue(is_array($request -> json())) Verifica que la respuesta se parse como un array 
 	  * @param assertEquals assertEquals($response -> status , 'exito'), Verifica que la respuesta sea la palabra exito.
 	  * 
+	  * @test
 	  */
-	public function testEliminar(){
+	public function eliminar(){
 					
 		$client = new GuzzleHttp\Client();
-		$idPlan = "ps3rtpfumfhpcca17zsk";
+		$idCliente = "aeyaft9soq3kbzzipt5w";
 		$options = array(
 							'body' 		=> array()
 							,'config'	=> array()
 							,'headers'	=> array()	
 						 );
 			
-		$request = $client -> delete('http://localhost/openpay/v1/monetizador/planes/'.$idPlan, $options);
-							
+		$servicio = sprintf("%s%s%s%s",$this -> server, $this -> servicioBase, $this -> recurso,$idCliente);
+		$request = $client -> delete($servicio,$options);
+		error_log(print_r("Resultado de eliminar >>>>>>>>>>>>>\n",true));
+		error_log(print_r((string) $request -> getBody(),true));	
+		
 		$response = $request  -> json(array('object' => true));
  		$this -> assertTrue(is_array($request -> json()));
 		$this -> assertEquals($response -> status , 'exito');
  	}
 	
 	/**
-	  * testActualizar, Actualiza un plan relacionado con el comercio 
+	  * Actualizar, Actualiza un suscrupcion relacionado con el comercio 
 	  *
 	  * El test valida que la respuesta de la peticion rest sea una respuesta exitosa
-	  * usando el servicio http://ip-expuesta/openpay/v1/monetizador/planes/id mediante el 
+	  * usando el servicio http://ip-expuesta/openpay/v1/monetizador/suscrupciones/id mediante el 
 	  * metodo PUT
 	  * 
 	  * @author Christian Hernandez <christian.hernandez@masnegocio.com>
@@ -156,29 +178,28 @@ class PlanTest extends PHPUnit_Framework_TestCase {
 	  * @param assertTrue assertTrue(is_array($request -> json())) Verifica que la respuesta se parse como un array 
 	  * @param assertEquals assertEquals($response -> status , 'exito'), Verifica que la respuesta sea la palabra exito.
 	  * 
+	  * @tes
 	  */
-	public function testActualizar(){
+	public function actualizar(){
  		
-		$planDataRequest = array(
-				    'amount' => 150.00,
-				    'status_after_retry' => 'cancelled',
-				    'retry_times' => 2,
-				    'name' => 'Plan Curso Verano 15 / 2',
-				    'repeat_unit' => 'month',
-				    'trial_days' => '30',
-				    'repeat_every' => '3',
-				    'currency' => 'MXN'
-					);
-		$idPlan = "pr5fkr931kneu4x5kv56";
+		$dataRequest = array(
+		     'name' => 'customer name Actualizado 5',
+		     'last_name' => 'Last name 5',
+		     'email' => 'customer_email5@me.com'
+		   );
+		$idCliente = "amrplbeoiagnrrqwetui";
 		$client = new GuzzleHttp\Client();
 		
 		$options = array(
-							'body' 	=>  $planDataRequest
+							'body' 	=>  $dataRequest
 							,'config'	=> array()
 							,'headers'	=> array()	
 						 );
 			
-		$request = $client -> put('http://localhost/openpay/v1/monetizador/planes/'.$idPlan, $options);
+		$servicio = sprintf("%s%s%s%s",$this -> server, $this -> servicioBase, $this -> recurso,$idCliente);
+		$request = $client -> put($servicio,$options);
+		error_log(print_r("Resultado de actualizar >>>>>>>>>>>>>\n",true));
+		error_log(print_r((string) $request -> getBody(),true));	
 							
 		$response = $request  -> json(array('object' => true));
  		$this -> assertTrue(is_array($request -> json()));

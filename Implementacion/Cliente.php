@@ -128,26 +128,23 @@ class Cliente  {
 	  */
 	public function crear(array $params = array()){
 			
-		$this -> customer = new ClienteDTO();
+		$clienteDTO = new ClienteDTO();
 		try {
 			$this -> app -> log -> info(print_r("Inicia proceso de alta de cliente",true));
 			
 			foreach ($params as $key => $value) {
-				$this -> customer -> __set($key,$value) ;
+				$clienteDTO -> __set($key,$value) ;
 			}
-			//Proceso Manual chs  buscar solucion
-			$this -> customer -> address = json_decode($this -> customer -> address,true);
 			
-			$this -> app -> log -> info(print_r($this -> customer,true));
+			$this -> app -> log -> debug(print_r($clienteDTO,true));
 			$this -> app->log->info(print_r("Accion openpay -> customers -> add ",true));
 			
-			$customer = $this -> openpay -> customers -> add( (array) $this -> customer);
-			$this -> customer -> id = $customer -> __get("id");
-			$this -> app -> log -> info(print_r($customer,true));
+			$customer = $this -> openpay -> customers -> add( (array) $clienteDTO);
+			$clienteDTO -> id = $customer -> __get("id");
 			
-			$this -> response["message"] = "Cliente creado con exito";
-			$this -> response["body"] = $this -> customer;
-			$this -> status = true;
+			$this -> response["message"] = "Cliente eliminado con exito";
+			$this -> response["body"] = $clienteDTO;
+			$this -> response["status"] = "exito";
 		} catch (OpenpayApiTransactionError $e) {
 			$this -> app -> log -> info(print_r("OpenpayApiTransactionError",true));
 			$this -> response["message"]= $e -> getMessage();
@@ -186,8 +183,8 @@ class Cliente  {
 				$customer = $this -> openpay -> customers -> get($idCliente);
 				$customer->delete();
 				$this -> response["message"] = "Cliente creado con exito";
-				$this -> response["body"] = $this -> customer;
-				$this -> status = true;
+				$this -> response["body"] = null;
+				$this -> response["status"] = "exito";
 				$this -> app -> log -> info(print_r("Finalizando proceso de eliminacion",true));
 		} catch (OpenpayApiTransactionError $e) {
 			$this -> app -> log -> info(print_r("OpenpayApiTransactionError idCliente = $idCliente",true));

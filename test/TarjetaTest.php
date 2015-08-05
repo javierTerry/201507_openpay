@@ -1,16 +1,18 @@
 <?php
 require_once(dirname(dirname(dirname(__FILE__)))."/dependencies/vendor/autoload.php");
 
-class PlanTest extends PHPUnit_Framework_TestCase {
+class TarjetaTest extends PHPUnit_Framework_TestCase {
 	
-	public function testMagicMethod(){
- 		$this -> assertTrue(true);
- 	}
+	private $idCliente  = "ak3hcep2n4faqqrey8t7/";
+	private $server		= "http://localhost/";
+	private $servicioBase="openpay/v1/monetizador/clientes/";
+	private $recurso	= "tarjetas/";
+	
  	/**
-	  * Test Listar, lista los Planes relacionados con el comercio 
+	  * Test Listar, lista los Tarjetaes relacionados con el comercio 
 	  *
 	  * El test valida que la respuesta de la peticion rest sea una respuesta exitosa
-	  * asi como el resultado contenga una lista de planes 
+	  * asi como el resultado contenga una lista de Tarjetaes 
 	  *
 	  * @author Christian Hernandez <christian.hernandez@masnegocio.com>
 	  * @version 1.0
@@ -19,14 +21,16 @@ class PlanTest extends PHPUnit_Framework_TestCase {
 	  * @param assertTrue assertTrue(is_array($request -> json())) Verifica que la respuesta se parse como un array 
 	  * @param assertEquals assertEquals($response -> status , 'exito'), Verifica que la respuesta sea la palabra exito.
 	  * @param assertGreaterThan assertGreaterThan(0, count($response -> body)), Verifica qe el body contega almenos un registro.
-	  * 
-	  * @codeCoverageIgnore 
+	  *  
 	  * 
 	  */
  	public function testListar(){
  		
 		$client = new GuzzleHttp\Client();
-		$request = $client -> get('http://localhost/openpay/v1/monetizador/planes');
+		$servicio = sprintf("%s%s%s%s",$this -> server, $this -> servicioBase, $this -> idCliente, $this -> recurso);
+		$request = $client -> get($servicio);
+		error_log(print_r("Resultado de testListar >>>>>>>>>>>>>\n",true));
+		error_log(print_r((string) $request -> getBody(),true));
 		$response = $request  -> json(array('object' => true));
  		$this -> assertTrue(is_array($request -> json()));
 		$this -> assertEquals($response -> status , 'exito');
@@ -34,10 +38,10 @@ class PlanTest extends PHPUnit_Framework_TestCase {
  	}
 	
 	/**
-	  * testListarEspecifico, lista un plan especifico relacionados con el comercio 
+	  * testListarEspecifico, lista un Tarjeta especifico relacionados con el comercio 
 	  *
 	  * El test valida que la respuesta de la peticion rest sea una respuesta exitosa
-	  * asi como el resultado contenga una lista de planes 
+	  * asi como el resultado contenga una lista de Tarjetaes 
 	  *
 	  * @author Christian Hernandez <christian.hernandez@masnegocio.com>
 	  * @version 1.0
@@ -53,8 +57,9 @@ class PlanTest extends PHPUnit_Framework_TestCase {
 	public function testListarEspecifico(){
  		
 		$client = new GuzzleHttp\Client();
-		$idPlan = "pmpmqlv6h9vki2hfeoe0";
-		$request = $client -> get('http://localhost/openpay/v1/monetizador/planes/'.$idPlan);
+		$idTarjeta = "kt3qrvmwz29n2m9lvm4z";
+		$servicio = sprintf("%s%s%s%s%s",$this -> server, $this -> servicioBase, $this -> idCliente, $this -> recurso,$idTarjeta);
+		$request = $client -> get($servicio);
 		error_log(print_r("Resultado de testListarEspecifico >>>>>>>>>>>>>\n",true));
 		error_log(print_r((string) $request -> getBody(),true));
 		$response = $request  -> json(array('object' => true));
@@ -64,11 +69,11 @@ class PlanTest extends PHPUnit_Framework_TestCase {
  	}
 	
 	/**
-	  * testCrear, Crea un plan relacionado con el comercio 
+	  * testCrear, Crea un Tarjeta relacionado con el comercio 
 	  *
 	  * El test valida que la respuesta de la peticion rest sea una respuesta exitosa
-	  * asi como el resultado contenga un objeto especificando el plan creado
-	  * usando el servicio http://ip-expuesta/openpay/v1/monetizador/planes/ mediante el 
+	  * asi como el resultado contenga un objeto especificando el Tarjeta creado
+	  * usando el servicio http://ip-expuesta/openpay/v1/monetizador/Tarjetaes/ mediante el 
 	  * metodo POST 
 	  * 
 	  * @author Christian Hernandez <christian.hernandez@masnegocio.com>
@@ -81,40 +86,62 @@ class PlanTest extends PHPUnit_Framework_TestCase {
 	  * 
 	  */
 	public function testCrear(){
- 		
-		$planDataRequest = array(
-				    'amount' => 150.00,
-				    'status_after_retry' => 'cancelled',
-				    'retry_times' => 2,
-				    'name' => 'Plan Curso Verano 15',
-				    'repeat_unit' => 'month',
-				    'trial_days' => '30',
-				    'repeat_every' => '3',
-				    'currency' => 'MXN'
-					);
+ 		//**Tarjeta declinada//
+		$dataRequest = array(
+						    'holder_name' => 'Teofilo Velazco',
+						    'card_number' => '4916394462033681',
+						    'cvv2' => '123',
+						    'expiration_month' => '12',
+						    'expiration_year' => '15',
+						    'address' => array(
+						            'line1' => 'Privada Rio No. 12',
+						            'line2' => 'Co. El Tintero',
+						            'line3' => '',
+						            'postal_code' => '76920',
+						            'state' => 'Querétaro',
+						            'city' => 'Querétaro.',
+							            'country_code' => 'MX'));
+										
+		$dataRequest = array(
+						    'holder_name' => 'Teofilo Velazco',
+						    'card_number' => '4111111111111111',
+						    'cvv2' => '123',
+						    'expiration_month' => '12',
+						    'expiration_year' => '15',
+						    'address' => array(
+						            'line1' => 'Privada Rio No. 12',
+						            'line2' => 'Co. El Tintero',
+						            'line3' => '',
+						            'postal_code' => '76920',
+						            'state' => 'Querétaro',
+						            'city' => 'Querétaro.',
+							            'country_code' => 'MX'));
 					
 		$client = new GuzzleHttp\Client();
 		
 		$options = array(
-							'body' 	=>  $planDataRequest
+							'body' 	=>  $dataRequest
 							,'config'	=> array()
 							,'headers'	=> array()	
 						 );
 			
-		$request = $client -> post('http://localhost/openpay/v1/monetizador/planes/', $options);
-							
+		$servicio = sprintf("%s%s%s%s",$this -> server, $this -> servicioBase, $this -> idCliente, $this -> recurso);
+		$request = $client -> post($servicio,$options);
+		error_log(print_r("Resultado de testListarEspecifico >>>>>>>>>>>>>\n",true));
+		error_log(print_r((string) $request -> getBody(),true));					
 		$response = $request  -> json(array('object' => true));
  		$this -> assertTrue(is_array($request -> json()));
 		$this -> assertEquals($response -> status , 'exito');
 		$this -> assertGreaterThan(0, count($response -> body));
+		
  	}
 	
 	/**
-	  * testEliminar, Elimina un plan relacionado con el comercio 
+	  * testEliminar, Elimina un Tarjeta relacionado con el comercio 
 	  *
 	  * El test valida que la respuesta de la peticion rest sea una respuesta exitosa
-	  * asi como el resultado contenga un objeto especificando el plan creado
-	  * usando el servicio http://ip-expuesta/openpay/v1/monetizador/planes/:id mediante el 
+	  * asi como el resultado contenga un objeto especificando el Tarjeta creado
+	  * usando el servicio http://ip-expuesta/openpay/v1/monetizador/Tarjetaes/:id mediante el 
 	  * metodo DELETE
 	  * 
 	  * @author Christian Hernandez <christian.hernandez@masnegocio.com>
@@ -128,62 +155,21 @@ class PlanTest extends PHPUnit_Framework_TestCase {
 	public function testEliminar(){
 					
 		$client = new GuzzleHttp\Client();
-		$idPlan = "ps3rtpfumfhpcca17zsk";
+		$idTarjeta = "kfa1rckvtjynxm1lpns8";
 		$options = array(
 							'body' 		=> array()
 							,'config'	=> array()
 							,'headers'	=> array()	
 						 );
 			
-		$request = $client -> delete('http://localhost/openpay/v1/monetizador/planes/'.$idPlan, $options);
+		$servicio = sprintf("%s%s%s%s%s",$this -> server, $this -> servicioBase, $this -> idCliente, $this -> recurso,$idTarjeta);
+		$request = $client -> delete($servicio,$options);
+		error_log(print_r("Resultado de testEliminar >>>>>>>>>>>>>\n",true));
+		error_log(print_r((string) $request -> getBody(),true));
 							
 		$response = $request  -> json(array('object' => true));
  		$this -> assertTrue(is_array($request -> json()));
 		$this -> assertEquals($response -> status , 'exito');
- 	}
-	
-	/**
-	  * testActualizar, Actualiza un plan relacionado con el comercio 
-	  *
-	  * El test valida que la respuesta de la peticion rest sea una respuesta exitosa
-	  * usando el servicio http://ip-expuesta/openpay/v1/monetizador/planes/id mediante el 
-	  * metodo PUT
-	  * 
-	  * @author Christian Hernandez <christian.hernandez@masnegocio.com>
-	  * @version 1.0
-	  * @copyright MásNegocio 
-	  * 
-	  * @param assertTrue assertTrue(is_array($request -> json())) Verifica que la respuesta se parse como un array 
-	  * @param assertEquals assertEquals($response -> status , 'exito'), Verifica que la respuesta sea la palabra exito.
-	  * 
-	  */
-	public function testActualizar(){
- 		
-		$planDataRequest = array(
-				    'amount' => 150.00,
-				    'status_after_retry' => 'cancelled',
-				    'retry_times' => 2,
-				    'name' => 'Plan Curso Verano 15 / 2',
-				    'repeat_unit' => 'month',
-				    'trial_days' => '30',
-				    'repeat_every' => '3',
-				    'currency' => 'MXN'
-					);
-		$idPlan = "pr5fkr931kneu4x5kv56";
-		$client = new GuzzleHttp\Client();
-		
-		$options = array(
-							'body' 	=>  $planDataRequest
-							,'config'	=> array()
-							,'headers'	=> array()	
-						 );
-			
-		$request = $client -> put('http://localhost/openpay/v1/monetizador/planes/'.$idPlan, $options);
-							
-		$response = $request  -> json(array('object' => true));
- 		$this -> assertTrue(is_array($request -> json()));
-		$this -> assertEquals($response -> status , 'exito');
-		$this -> assertGreaterThan(0, count($response -> body));
  	}
 }
 ?>

@@ -7,10 +7,20 @@
 	        <testsuite name="Plan">
 	            <file>./PlanTest.php</file>
 	        </testsuite>
-	        <testsuite name="Suscripcion">
+	    	<testsuite name="Suscripcion">
 	            <directory>./SuscripcionTest.php</directory>
 	        </testsuite>
-	    </testsuites>	
+	   		 <testsuite name="Cargo">
+	            <directory>./CargoTest.php</directory>
+	        </testsuite>
+	        <testsuite name="Tarjeta">
+	            <directory>./TarjetaTest.php</directory>
+	        </testsuite>
+	        <testsuite name="Cliente">
+	            <directory>./ClienteTest.php</directory>
+	        </testsuite>	
+	    </testsuites>
+	   
      
     
     <filter>

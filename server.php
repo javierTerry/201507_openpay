@@ -40,12 +40,6 @@ $app -> group("/v1/monetizador/", function () use ($app){
 	
 	$app -> get('test', "ping");	
 	
-	//Tarjetas
-	$app -> get('tarjetas', "cards");
-	$app -> post('tarjetas', "cardAdd");
-	$app -> delete("tarjetas/:id", "cardDelete");
-	
-	
 	//Cargos
 	$app -> post('cargos', "cargos");
 	$app -> get('cargos', "cargos");
@@ -64,11 +58,11 @@ $app -> group("/v1/monetizador/", function () use ($app){
 	 //Cliente
 	 $app->group('clientes', function () use ($app) {
 	 	
-		$app -> get("/", "clienteListar");
-		$app -> get("/:id", "clienteListar");
+		$app -> get("/", "cliente");
+		$app -> get("/:id", "cliente");
 		$app -> post("/", "cliente");
-		$app -> delete("/:id", "clienteEliminar");
-		$app -> put("/:id", "clienteEditar");
+		$app -> put("/:id", "cliente");
+		$app -> delete("/:id", "cliente");
 	 	
 		//Cargos
 		$app -> post('/:id/cargos', "cargos");
@@ -82,9 +76,10 @@ $app -> group("/v1/monetizador/", function () use ($app){
         $app -> delete('/:idCliente/suscripciones/:idSuscripcion', "suscripcion");
 		
 		//Tarjetas
-		$app -> post('/:id/tarjetas', "cardAdd");
-		$app -> get('/:id/tarjetas', "cards");
-		$app -> delete("/:idcliente/tarjetas/:id", "cardDelete");
+		$app -> get('/:idCliente/tarjetas/', "tarjeta");
+		$app -> get('/:idCliente/tarjetas/:idTarjeta', "tarjeta");
+		$app -> post('/:id/tarjetas/', "tarjeta");
+		$app -> delete("/:idcliente/tarjetas/:id/", "tarjeta");
 
 	 });
 	 
@@ -119,32 +114,57 @@ $app->run();
 }
 
 /**
-   * Funcion de clientes a nivel comercio
+   * Clientes
    *
-   * La funcion cargos implementa la CargoComercio, la cual
-   * contiene la logica de openpay para poder realizar la via
-   * API-OpenOPay.
+   * Los clientes son recursos en Openpay que se manejan dentro de su
+   * cuenta de comercio y puede representar usuarios, clientes o socios segun el tipo de negocio.
    *
    * @author Christian Hernandez <christian.hernandez@masnegocio.com>
    * @version 1.0
    * @copyright MásNegocio
    *  
+   * @see Class Cliente
+   * @param	array()  app -> request() -> params() Estructura que contiene, datos para uar la clase Cargo 	
+   * @param string $isCliente Id del cliente a quie se realizara e cargo
+   * @throws Exception Se produce una excepcion general en caso de un error
+   *		no contralado  
    *  
  */
  
- function cliente() {
+ function cliente($idCliente = "") {
 	$app = Slim::getInstance();
+	$cliente = new Cliente();
+	$response = array();
+	
 	try{
 		$app->log->info("Servicio cliente - Inicializando");
-		$cliente = new Cliente();
+		
 		$app->log->info(print_r($app -> request() -> params(),true));
-		$cliente -> crear($app -> request() -> params());
+		$dataRequest = $app -> request() -> params();
+		
+		switch ($app->request->getMethod()) {
+		    case "POST":
+				$cliente -> crear($dataRequest);		     
+		        break;
+		    case "GET":
+				$cliente -> listar($idCliente, $dataRequest);
+		        break;
+		    case "PUT":
+		        $cliente -> actualizar($idCliente, $dataRequest);
+		        break;
+			case "DELETE":
+		        $cliente -> eliminar($idCliente);
+		        break;
+		    
+		    default:
+		        $app -> response -> setStatus(405);
+		};
 		$response = $cliente -> __get("response");
 		$app->log->info("Servicio cliente - Proceso Completo "); 
 	} catch (Exception $e){
 		$app->log->info("Servicio cliente - Proceso Incompleto ");
 		$app->log->info("Servicio cliente - ". $e -> getMessage());
-		$response = $cliente -> __response();
+		$response = $cliente -> __get("response");
 		if ($e -> getCode() == 3000){
 			$response['message'] = $e -> getMessage();
 		}
@@ -159,324 +179,70 @@ $app->run();
 	
 	$app->stop();
 }
- 
- /**
-   * Funcion de clienteListar a nivel comercio
+
+/**********************************************************************************************************/
+/**
+   * Tarjeta Bancaria
    *
-   * La funcion clienteListar se implementa a nivel Comercio, la cual
-   * obtiene una lista de usuarios previamente registrado o un usuario especifico
-   * , implementa la libreria de API-OpenOPay.
+   * La funcion tarjeta usa la clase Tarjeta que contiene la logica para realizar operaciones basicas .
+   * 
+   * Dentro de la plataforma Openpay podrás agregar tarjetas a la cuenta del cliente, eliminarlas,
+   * recuperar alguna en específico y listarlas​.
+   * 
    *
    * @author Christian Hernandez <christian.hernandez@masnegocio.com>
-   * @version 1.0
+   * @version 1.0 20150730 
    * @copyright MásNegocio
-   *  
-   * @param $idCustomer	si el valor no existe o es blanco se obtendra 
-   * 	la lista de usuarios registrados, en caso contrario regresara 
-   *	el usuario especificado 
+   * 
+   * @see Class tarjeta 
+   * @param	array()  app -> request() -> params() Estructura que contiene, datos para uar la clase Cargo 	
+   * @param string $isCliente Id del cliente a quie se realizara e cargo
+   * @throws Exception Se produce una excepcion general en caso de un error
+   *		no contralado  
    *  
  */
  
- function clienteListar($idCustomer = "") {
-	$app = Slim::getInstance();
+
+ 
+ function tarjeta( $isCliente, $idTarjeta = "") {
+ 	$app = Slim::getInstance();
+	$tarjeta = new Tarjeta();
+	$response = array();
 	try{
-		$app->log->info("Servicio cliente - Inicializando", array ("test" => "caeena test"));
-		$cliente = new Cliente();
-		$cliente -> listar($idCustomer, $app -> request() -> params());
-			$response = $cliente -> __get("response");
-		$app->log->info("Servicio cliente - Proceso Completo "); 
-		$app->response->setStatus(201);
+		$dataRequest = $app -> request() -> params();
+		$app -> log -> info("Servicio Tarjeta - Inicializando - ".$app->request->getMethod() );
+		$app -> log -> info(print_r($dataRequest ,true));
+		switch ($app->request->getMethod()) {
+		    case "POST":
+				$tarjeta -> crear($isCliente,  $dataRequest);		     
+		        break;
+		    case "GET":
+				$tarjeta -> listar($isCliente, $idTarjeta, $dataRequest);
+		        break;
+			case "DELETE":
+				$tarjeta -> eliminar($isCliente, $idTarjeta, $dataRequest);
+		        break;
+		    default:
+		        $app -> response -> setStatus(405);
+		};
+		
+		$response = $tarjeta -> __get("response");
+		$app -> log -> info("Servicio Cargo - Proceso Completo ");
+		 
 	} catch (Exception $e){
-		$app -> log -> info("Servicio cliente - Proceso Incompleto ");
-		$app -> log -> info("Servicio cliente - ". $e -> getMessage());
-		$response = $cliente -> __response();
+		$app->log->info("Servicio Tarjeta - Proceso Incompleto ");
+		$app->log->info("Servicio Tarjeta - ". $e -> getMessage());
+		$response = $tarjeta -> __get("response");
 		if ($e -> getCode() == 3000){
 			$response['message'] = $e -> getMessage();
 		}
-		
-		$app->log->info(print_r($response,true));
-		$app->response->setStatus(400);
 	}
 	
 	$jsonStr=json_encode($response);
-	$app->log->info("Servicio cliente - Response \n->$jsonStr<-");
+	$app->log->info("Servicio Tarjeta - Response \n->$jsonStr<-");
 	$app->response->headers->set('Content-Type', 'application/json');
-	$app->response->body($jsonStr);
+	$app->response->headers->set('Access-Control-Allow-Origin', 'http://10.0.70.21');
 	
-	$app->stop();
-}
-
-/**
-   * Funcion de clienteEliminar a nivel comercio
-   *
-   * La funcion clienteEliminar se implementa a nivel Comercio, la cual
-   * elimina un cliente registrado previamente, utiliza la clase Cliente.
-   *
-   * @author Christian Hernandez <christian.hernandez@masnegocio.com>
-   * @version 1.0
-   * @copyright MásNegocio
-   *  
-   * @param $idCustomer	es el Id del cliente a eliminar
-   *  
- */
- 
- function clienteEliminar($idCustomer = "") {
-	$app = Slim::getInstance();
-	try{
-		$app->log->info("Servicio cliente - Eliminar - Inicializando");
-		$cliente = new Cliente();
-		$cliente -> eliminar($idCustomer);
-		$response = $cliente -> __get("response");
-		$app->log->info("Servicio cliente - Eliminar - Proceso Completo "); 
-		$app->response->setStatus(204);
-	} catch (Exception $e){
-		$app -> log -> info("Servicio cliente - Eliminar - Proceso Incompleto ");
-		$app -> log -> info("Servicio cliente - Eliminar - ". $e -> getMessage());
-		$response = $cliente -> __response();
-		if ($e -> getCode() == 3000){
-			$response['message'] = $e -> getMessage();
-		}
-		
-		$app->log->info(print_r($response,true));
-		//$app->response->setStatus(400);
-	}
-	
-	
-	$jsonStr=json_encode($response);
-	$app->log->info("Servicio cliente - Eliminar - Response \n->$jsonStr<-");
-	$app->response->headers->set('Content-Type', 'application/json');
-	$app->response->body($jsonStr);
-	
-	$app->stop();
-}
- 
-/**
-   * Funcion de clienteEditar a nivel comercio
-   *
-   * La funcion clienteEditar se implementa a nivel Comercio, la cual
-   * actualiza un cliente registrado previamente, utiliza la clase Cliente.
-   *
-   * @author Christian Hernandez <christian.hernandez@masnegocio.com>
-   * @version 1.0
-   * @copyright MásNegocio
-   *  
-   * @param $idCustomer	es el Id del cliente que se actualizara
-   *  
- */
- 
- function clienteEditar($idCustomer = "") {
-	$app = Slim::getInstance();
-	try{
-		$app->log->info("Servicio cliente - Editar - Inicializando");
-		$cliente = new Cliente();
-		$cliente -> actualizar($idCustomer, $app -> request() -> params());
-		$response = $cliente -> __get("response");
-		$app->log->info("Servicio cliente - Editar - Proceso Completo "); 
-		$app->response->setStatus(204);
-	} catch (Exception $e){
-		$app -> log -> info("Servicio cliente - Editar - Proceso Incompleto ");
-		$app -> log -> info("Servicio cliente - Editar - ". $e -> getMessage());
-		$response = $cliente -> __response();
-		if ($e -> getCode() == 3000){
-			$response['message'] = $e -> getMessage();
-		}
-		
-		$app->log->info(print_r($response,true));
-		//$app->response->setStatus(400);
-	}
-	
-	$jsonStr=json_encode($response);
-	$app->log->info("Servicio cliente - Editar - Response \n->$jsonStr<-");
-	$app->response->headers->set('Content-Type', 'application/json');
-	$app->response->body($jsonStr);
-	
-	$app->stop();
-}
- 
- /**
-   * Funcion de cargos a nivel comercio
-   *
-   * La funcion cargos implementa la CargoComercio, la cual
-   * contiene la logica de openpay para poder realizar la via
-   * API-OpenOPay.
-   *
-   * @author Christian Hernandez <christian.hernandez@masnegocio.com>
-   * @version 1.0
-   * @copyright MásNegocio
-   *  
-   *  
- */
-function cargosOLD($customerId = "argmzwukbogwrs9pw3m7") {
-	$app = Slim::getInstance();
-	try{
-		
-		$cargo = new Cargo();
-		$app->log->info(print_r($app -> request() -> params(),true));
-		$cargo -> crear($app -> request() -> params(), $customerId);
-		$response = $cargo -> __get("response");
-		$app->log->info("Proceso Compelto "); 
-	} catch (Exception $e){
-		$response = $cargo -> __response();
-		$app->log->info(print_r($response,true));
-	}
-	
-	$jsonStr=json_encode($response);
-	$app->log->info("Servicio pago con tarjeta - Response \n->$jsonStr<-");
-	$app->response->headers->set('Content-Type', 'application/json');
-	$app->response->body($jsonStr);
-	
-	$app->stop();
-}
-
-/**
-  * Funcion de cards a nivel comercio
-  *
-  * La funcion cargos implementa la CargoComercio, la cual
-  * contiene la logica de openpay para poder realizar la via
-  * API-OpenOPay.
-  *
-  * @author Christian Hernandez <christian.hernandez@masnegocio.com>
-  * @version 1.0
-  * @copyright MásNegocio
-  * @param $idCliente  valor del cliente registro
-  * 
-  */
-function cards($idCliente = null) {
-	$app = Slim::getInstance();
-	$response = array('message' => "Error inesperado intente mas tarde"
-						,'codigo'	=> 0
-						,'status'	=> "fallo"
-						);
-	try{
-		
-		$tarjeta = new Tarjeta();
-		$tarjeta -> listar($idCliente, $app -> request() -> params());
-		$response = $tarjeta -> __get("cardList");
-		$app->log->info("Proceso Compelto "); 
-	}catch (OpenpayApiRequestError $e){
-		$app->log->info(print_r("OpenpayApiRequestError",true));
-		$response = array('message' => $e -> getDescription()
-						,'codigo'	=> $e -> getErrorCode()
-						,'status'	=> "fallo"
-						);
-	} catch (Exception $e){
-		$app->log->info(print_r($e,true));
-		$msg = sprintf("%s, codigo de error %s  Consulte a su adminsitrador", $e -> getDescription(), $e -> getErrorCode());
-		$app->log->info($msg);
-	}
-	
-	$jsonStr=json_encode($response);
-	$app->log->info("Servicio pago con tarjeta - Response \n->$jsonStr<-");
-	$app->response->headers->set('Content-Type', 'application/json');
-	$app->response->body($jsonStr);
-	
-	$app->stop();
-}
-
-/**
-  * Funcion de cardAdd agrega una Tarjeta 
-  *
-  * La funcion cardAdd implementa Tarjeta, la cual contiene la 
-  * logica de API-OpenOPay para agregar una tarjeta al comerio o el cliente
-  * 
-  *
-  * @author Christian Hernandez <christian.hernandez@masnegocio.com>
-  * @version 1.0
-  * @copyright MásNegocio
-  * @param $idCliente  valor del cliente registro
-  * 
-  */
-function cardAdd($idCliente = null) {
-	$app = Slim::getInstance();
-	$app->log->info("Servicio crear tarjeta Inicializando");
-	$response = array('message' => "Error inesperado intente mas tarde"
-						,'codigo'	=> 0
-						,'status'	=> "fallo"
-						);
-	try{
-		$app->log->info(print_r($app -> request() -> params(),true));
-		$tarjeta = new Tarjeta();
-		$tarjeta -> crear($idCliente, $app -> request() -> params());
-		$response = $tarjeta -> __get("card");
-		$app->log->info("Proceso Completo ");
-	}catch (OpenpayApiTransactionError $e){
-		$app->log->info(print_r("OpenpayApiRequestError",true));
-		$response = array('message' => $e -> getDescription()
-						,'codigo'	=> $e -> getErrorCode()
-						,'status'	=> "fallo"
-						);
-	}catch (OpenpayApiRequestError $e){
-		$app->log->info(print_r("OpenpayApiRequestError",true));
-		$response = array('message' => $e -> getDescription()
-						,'codigo'	=> $e -> getErrorCode()
-						,'status'	=> "fallo"
-						);
-	} catch (Exception $e){
-		$app->log->info(print_r($e,true));
-		$msg = sprintf("%s, codigo de error  Consulte a su adminsitrador", $e -> getMessage());
-		$app->log->info($msg);
-	}
-	
-	$jsonStr=json_encode($response);
-	$app->log->info("Servicio crear tarjeta Finalizando- Response \n->$jsonStr<-");
-	$app->response->headers->set('Content-Type', 'application/json');
-	$app->response->body($jsonStr);
-	
-	$app->stop();
-}
-
-/**
-  * Funcion de cardDelete elimina una Tarjeta 
-  *
-  * La funcion cardDelete elimana una tarjeta previamente registrada 
-  * esta accion se puede realizar a nivel comercio o cliente - comercio
-  * para deciha accion lo unico que se necesita es 
-  *
-  * @author Christian Hernandez <christian.hernandez@masnegocio.com>
-  * @version 1.0
-  * @copyright MásNegocio
-  * @param $idCliente  valor del registro del cliente
-  * @param $idTarjeta Id de la tarjeta a borrar
-  * 
-  */
-function cardDelete( $idTarjeta = null, $idCliente = null) {
-	$app = Slim::getInstance();
-	$app->log->info("Servicio crear tarjeta Inicializando");
-	$response = array('message' => "Error inesperado intente mas tarde"
-						,'codigo'	=> 0
-						,'status'	=> "fallo"
-						);
-	try{
-		$app->log->info(print_r($app -> request() -> params(),true));
-		$tarjeta = new Tarjeta();
-		$tarjeta -> borrar($idTarjeta, $idCliente, $app -> request() -> params());
-		$response = array('message' => "Borrado exitoso"
-						,'codigo'	=> 0
-						,'status'	=> "exito"
-						,'body'		=> array()
-						);
-		$app->log->info("Proceso Completo ");
-	}catch (OpenpayApiTransactionError $e){
-		$app->log->info(print_r("OpenpayApiTransactionError",true));
-		$response = array('message' => $e -> getDescription()
-						,'codigo'	=> $e -> getErrorCode()
-						,'status'	=> "fallo"
-						);
-	}catch (OpenpayApiRequestError $e){
-		$app->log->info(print_r("OpenpayApiRequestError",true));
-		$response = array('message' => $e -> getDescription()
-						,'codigo'	=> $e -> getErrorCode()
-						,'status'	=> "fallo"
-						);
-	} catch (Exception $e){
-		$app->log->info(print_r($e,true));
-		$msg = sprintf("%s, codigo de error  Consulte a su adminsitrador", $e -> getMessage());
-		$app->log->info($msg);
-	}
-	
-	$jsonStr=json_encode($response);
-	$app->log->info("Servicio crear tarjeta Finalizando- Response \n->$jsonStr<-");
-	$app->response->headers->set('Content-Type', 'application/json');
 	$app->response->body($jsonStr);
 	
 	$app->stop();
