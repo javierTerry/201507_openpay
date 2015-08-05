@@ -28,39 +28,31 @@ use Slim\Exception;
 
 Slim::registerAutoloader();
 $app = new Slim(
-					array(
-			    		'debug' 			=> true,
-			    		'log.level' 		=> \Slim\Log::DEBUG,
-			    		'log.enabled' 		=> true,
-			    		'log.writer' 		=> new \Slim\LogWriter(fopen(dirname(__FILE__).'/log/'.date('Y-M-d').'.log', 'a'))
-					)
-				);
-
-$app -> get('/v1/monetizador/test', "ping");
-//Cargos
-$app -> get('/v1/monetizador/cargos', "cargos");
-$app -> post('/v1/monetizador/cargos', "cargos");
-$app -> post('/v1/monetizador/cargos/clientes:/id', "cargos");
-
-//Tarjetas
-$app -> get('/v1/monetizador/tarjetas', "cards");
-$app -> post('/v1/monetizador/tarjetas', "cardAdd");
-$app -> delete("/v1/monetizador/tarjetas/:id", "cardDelete");
-// Cliente
-$app -> post("/v1/monetizador/clientes", "cliente");
-$app -> get("/v1/monetizador/clientes", "clienteListar");
-$app -> get("/v1/monetizador/clientes/:id", "clienteListar");
-$app -> delete("/v1/monetizador/clientes/:id", "clienteEliminar");
-$app -> put("/v1/monetizador/clientes/:id", "clienteEditar");
-
-// Cliente - Tarjeta
-$app -> post('/v1/monetizador/tarjetas/clientes/:id', "cardAdd");
-$app -> get('/v1/monetizador/tarjetas/clientes/:id', "cards");
-$app -> delete("/v1/monetizador/clientes/:idcliente/tarjetas/:id", "cardDelete");
-
+				array(
+		    		'debug' 			=> true,
+		    		'log.level' 		=> \Slim\Log::DEBUG,
+		    		'log.enabled' 		=> true,
+		    		'log.writer' 		=> new \Slim\LogWriter(fopen(dirname(__FILE__).'/log/'.date('Y-M-d').'.log', 'a'))
+				)
+			);
 
 $app -> group("/v1/monetizador/", function () use ($app){
-	 $app->group('planes', function () use ($app) {
+	
+	$app -> get('test', "ping");	
+	
+	//Tarjetas
+	$app -> get('tarjetas', "cards");
+	$app -> post('tarjetas', "cardAdd");
+	$app -> delete("tarjetas/:id", "cardDelete");
+	
+	
+	//Cargos
+	$app -> post('cargos', "cargos");
+	$app -> get('cargos', "cargos");
+	
+	
+	//Planes
+	$app->group('planes', function () use ($app) {
 	 	
 	 	$app -> post("/", "plan");
         $app -> get('/', "plan");
@@ -69,14 +61,33 @@ $app -> group("/v1/monetizador/", function () use ($app){
         $app -> delete('/:id', "plan");
 	 });
 	 
+	 //Cliente
 	 $app->group('clientes', function () use ($app) {
 	 	
+		$app -> get("/", "clienteListar");
+		$app -> get("/:id", "clienteListar");
+		$app -> post("/", "cliente");
+		$app -> delete("/:id", "clienteEliminar");
+		$app -> put("/:id", "clienteEditar");
+	 	
+		//Cargos
+		$app -> post('/:id/cargos', "cargos");
+		$app -> get('/:id/cargos', "cargos");
+		
+		//Suscripciones
 	 	$app -> post("/:idCliente/suscripciones/", "suscripcion");
         $app -> get('/:idCliente/suscripciones/', "suscripcion");
         $app -> get('/:idCliente/suscripciones/:idSuscripcion', "suscripcion");
         $app -> put('/:idCliente/suscripciones/:idSuscripcion', "suscripcion");
         $app -> delete('/:idCliente/suscripciones/:idSuscripcion', "suscripcion");
+		
+		//Tarjetas
+		$app -> post('/:id/tarjetas', "cardAdd");
+		$app -> get('/:id/tarjetas', "cards");
+		$app -> delete("/:idcliente/tarjetas/:id", "cardDelete");
+
 	 });
+	 
 });
 
 
@@ -295,7 +306,7 @@ $app->run();
    *  
    *  
  */
-function cargos($customerId = "argmzwukbogwrs9pw3m7") {
+function cargosOLD($customerId = "argmzwukbogwrs9pw3m7") {
 	$app = Slim::getInstance();
 	try{
 		
@@ -471,6 +482,72 @@ function cardDelete( $idTarjeta = null, $idCliente = null) {
 	$app->stop();
 }
 
+/**
+   * Funcion de CArgo a nivel comercio
+   *
+   * La funcion cargo usa la clase cargo que contiene la logica
+   * para crear un cargo.
+   * 
+   * Los cargos se pueden realizar cargos a tarjetas, tiendas y bancos.
+   * A cada cargo se le asigna un identificador único en el sistema.
+   * En cargos a tarjeta puedes hacerlo a una tarjeta guardada usando el id de la tarjeta, 
+   * usando un token o puedes enviar la información de la tarjeta al momento de la invocación.
+   * 
+   *
+   * @author Christian Hernandez <christian.hernandez@masnegocio.com>
+   * @version 1.0 20150730 
+   * @copyright MásNegocio
+   * 
+   * @see Cargo() 
+   * @param	array()  app -> request() -> params() Estructura que contiene, datos para uar la clase Cargo 	
+   * @param string $isCliente Id del cliente a quie se realizara e cargo
+   * @throws Exception Se produce una excepcion general en caso de un error
+   *		no contralado  
+   *  
+ */
+ 
+
+ 
+ function cargos( $isCliente = "") {
+ 	$app = Slim::getInstance();
+	$cargo = new Cargo();
+	$response = array();
+	try{
+		$dataRequest = $app -> request() -> params();
+		$app -> log -> info("Servicio Cargo - Inicializando - ".$app->request->getMethod() );
+		$app -> log -> info(print_r($dataRequest ,true));
+		switch ($app->request->getMethod()) {
+		    case "POST":
+				$cargo -> crear($isCliente, $dataRequest);		     
+		        break;
+		    case "GET":
+				$cargo -> listar($isCliente, $dataRequest);
+		        break;
+		    default:
+		        $app -> response -> setStatus(405);
+		};
+		
+		$response = $cargo -> __get("response");
+		$app -> log -> info("Servicio Cargo - Proceso Completo ");
+		 
+	} catch (Exception $e){
+		$app->log->info("Servicio Cargo - Proceso Incompleto ");
+		$app->log->info("Servicio Cargo - ". $e -> getMessage());
+		$response = $cargo -> get("response");
+		if ($e -> getCode() == 3000){
+			$response['message'] = $e -> getMessage();
+		}
+	}
+	
+	$jsonStr=json_encode($response);
+	$app->log->info("Servicio Plan - Response \n->$jsonStr<-");
+	$app->response->headers->set('Content-Type', 'application/json');
+	$app->response->headers->set('Access-Control-Allow-Origin', 'http://10.0.70.21');
+	
+	$app->response->body($jsonStr);
+	
+	$app->stop();
+}
 
 /**
    * Funcion de plan a nivel comercio

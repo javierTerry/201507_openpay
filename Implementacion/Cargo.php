@@ -57,7 +57,43 @@ class Cargo {
 	  */
 	public function listar($idCliente = null, array $params = array()){
 		
-		$this -> estatus = true;
+		$cargoDTO = new CargoDTO();
+		try {
+			$this -> app -> log -> info(print_r("Inicia proceso de lista de cargos",true));
+			$this -> app -> log -> info(print_r("Verifica si existe cliente",true));
+			
+			$findData = array(
+		    		'offset' => 0,
+		    		'limit' => 25
+				);
+			$findData = array_merge($findData, $params);
+			if ($idCliente === null || $idCliente == "") {
+				$this -> app -> log -> info(print_r(" openpay -> charges -> getList ",true));
+				$charge = $this -> openpay -> charges -> getList($findData);
+			} else {
+				$this -> app -> log -> info(print_r(" openpay -> customers -> get ",true));
+				$customer = $this -> openpay -> customers -> get($idCliente);
+				$this -> app -> log -> info(print_r(" customer -> charges -> getList ",true));
+				$charge = $customer -> charges -> getList($findData);
+			}
+								
+			$this -> response["message"]= "Listado creado con exito";
+			$this -> response["body"] 	= $cargoDTO;
+			$this -> response["status"] = "exito";
+		} catch (OpenpayApiTransactionError $e) {
+			$this -> app -> log -> info(print_r("OpenpayApiTransactionError",true));
+			$this -> response["message"]= $e -> getMessage();
+			$this -> response["codigo"]	= $e -> getErrorCode();
+		} catch (OpenpayApiRequestError $e) {
+			$this -> app -> log -> info(print_r("OpenpayApiRequestError",true));
+			$this -> response["message"]= $e -> getMessage();
+			$this -> response["codigo"]	= $e -> getErrorCode();
+		} catch (OpenpayApiAuthError $e) {
+			$this -> app -> log -> info(print_r("OpenpayApiAuthError",true));
+			$this -> app -> log -> info(print_r($e -> getMessage(),true));
+			$this -> response["message"]= "Error de interno del comercio intente mas tarde";
+		}
+		
 	}
 	
 	/**
@@ -76,9 +112,9 @@ class Cargo {
 	  * @return
 	  * 
 	  */
-	public function crear(array $params = array(), $customerId = null){
+	public function crear( $customerId = "", array $params = array()){
 		$charge = null;
-		$cargoVO = new CargoVO();
+		$cargoDTO = new CargoDTO();
 		try{
 			$chargeData = array(
 		    'method' => 'card',
@@ -90,55 +126,52 @@ class Cargo {
 			$chargeData = array_merge($chargeData, $params);
 			
 			$this -> app -> log -> info(print_r("Exite el cliente $customerId",true));
-			if ($customerId === null) {
+			if ($customerId === null || $customerId == "") {
+				$this -> app -> log -> info(print_r(" openpay -> charges -> create ",true));
 				$charge = $this -> openpay -> charges -> create($chargeData);
 			} else {
-				$customer = $this -> openpay -> customers->get($customerId);
-				$charge = $customer->charges->create($chargeData);
+				$this -> app -> log -> info(print_r(" openpay -> customers -> get ",true));
+				$customer = $this -> openpay -> customers -> get($customerId);
+				$this -> app -> log -> info(print_r(" customer -> charges -> create ",true));
+				$charge = $customer -> charges -> create($chargeData);
 			}
-		}catch (OpenpayApiRequestError $e){
-				$app->log->info(print_r("OpenpayApiRequestError",true));
-				$this -> response = array('message' => $e -> getDescription()
-										,'codigo'	=> $e -> getErrorCode()
-										,'status'	=> "fallo"
-									);
-			throw new Exception($this -> response, 1);
 			
+			foreach ($cargoDTO as $key => $value) {
+				error_log(print_r( $key ,true));
+				$cargoDTO -> $key = $charge ->__get($key);
+				if (is_object($cargoDTO -> $key) ) {
+					$this -> app -> log -> debug(print_r("Esto es un objeto",true));	
+				}
+				
+			}
+	/*		
+			$cargoDTO -> card_type		= $charge ->__get("card") -> __get("type");
+			$cargoDTO -> bank_code		= $charge ->__get("card") -> __get("bank_code");
+			$cargoDTO -> bank_name		= $charge ->__get("card") -> __get("bank_name");
+			$cargoDTO -> brand			= $charge ->__get("card") -> __get("brand");	
+		
+	 * 
+	 *
+	 */
+		} catch (OpenpayApiTransactionError $e) {
+			$this -> app -> log -> info(print_r("OpenpayApiTransactionError",true));
+			$this -> response["message"]= $e -> getMessage();
+			$this -> response["codigo"]	= $e -> getErrorCode();
+		} catch (OpenpayApiRequestError $e) {
+			$this -> app -> log -> info(print_r("OpenpayApiRequestError",true));
+			$this -> app -> log -> debug(print_r($e,true));
+			$this -> response["message"]= $e -> getMessage();
+			$this -> response["codigo"]	= $e -> getErrorCode();
+		} catch (OpenpayApiAuthError $e) {
+			$this -> app -> log -> info(print_r("OpenpayApiAuthError",true));
+			$this -> app -> log -> info(print_r($e -> getMessage(),true));
+			$this -> response["message"]= "Error de interno del comercio intente mas tarde";
 		}
-		$cargoVO -> authorization 	= $charge ->__get("authorization");
-		$cargoVO -> creation_date 	= $charge ->__get("creation_date");
-		$cargoVO -> currency		= $charge ->__get("currency");
-		$cargoVO -> customer_id		= $charge ->__get("customer_id");
-		$cargoVO -> operation_type	= $charge ->__get("operation_type");
-		$cargoVO -> status			= $charge ->__get("status");
-		$cargoVO -> card_type		= $charge ->__get("card") -> __get("type");
-		$cargoVO -> bank_code		= $charge ->__get("card") -> __get("bank_code");
-		$cargoVO -> bank_name		= $charge ->__get("card") -> __get("bank_name");
-		$cargoVO -> brand			= $charge ->__get("card") -> __get("brand");
 		
 		$this -> response["message"]= "Cargo Realizado Exitosamente";
 		$this -> response["status"]	= "exito";
 		$this -> response["codigo"]	= "1001";
-		$this -> response["body"] = $cargoVO;
-	}
-
-
-	/**
-	  * Borrar la tarjeta mediante su id implementando la API de OPENPAY 
-	  * 
-	  * Borra la terjeta previamente registrada, esta tarjeta queda eliminada definitivamente 
-	  * no existe opción de restaurar, lo que secedera es dar de alta una nueva o la misma tarjeta
-	  *   
-	  * 
-	  * 
-	  * @author Christian Hernandez <christian.hernandez@masnegocio.com>
-	  * @version 1.0
-	  * @copyright MásNegocio
-	  * 
-	  */
-	public function borrar($idTarjeta = "", $idCliente = null, array $params = array()){
-		
-		$this -> estatus = true;
+		$this -> response["body"] = $cargoDTO;
 	}
 }
 
@@ -153,7 +186,7 @@ class Cargo {
   * 
   */
  
-class CargoVO {
+class CargoDTO {
 	use MNTrait\Comun\MagicMethod;
 	
 	public $authorization	= "";
@@ -162,10 +195,7 @@ class CargoVO {
 	public $customer_id		= "";
 	public $operation_type 	= "";
 	public $status			= "";
-	public $bank_code		= "";
-	public $card_type		= "";	
-	public $bank_name		= "";
-	public $brand			= "";
+	public $card			= "";
 	
 }
 ?>
